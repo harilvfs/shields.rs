@@ -1,6 +1,6 @@
 use askama::Template;
 
-/// SVG 渲染模板上下文，字段需与 badge_svg_template_askama.svg 中变量一一对应
+/// SVG rendering template context, fields must correspond to variables in badge_svg_template_askama.svg
 #[derive(Template)]
 #[template(path = "flat_badge_template.svg", escape = "none")]
 struct FlatBadgeSvgTemplateContext<'a> {
@@ -29,7 +29,7 @@ struct FlatBadgeSvgTemplateContext<'a> {
     message_text_color: &'a str,
     message_width_scaled: i32,
 }
-/// flat-square SVG 渲染模板上下文
+/// flat-square SVG rendering template context
 #[derive(Template)]
 #[template(path = "flat_square_badge_template.svg", escape = "none")]
 struct FlatSquareBadgeSvgTemplateContext<'a> {
@@ -55,7 +55,7 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
     message_text_color: &'a str,
     message_width_scaled: i32,
 }
-/// plastic SVG 渲染模板上下文
+/// plastic SVG rendering template context
 #[derive(Template)]
 #[template(path = "plastic_badge_template.svg", escape = "none")]
 pub struct PlasticBadgeSvgTemplateContext<'a> {
@@ -63,7 +63,7 @@ pub struct PlasticBadgeSvgTemplateContext<'a> {
     accessible_text: &'a str,
     left_width: i32,
     right_width: i32,
-    // 渐变色
+    // gradient
     has_label: bool,
     label: &'a str,
     label_x: f32,
@@ -79,12 +79,12 @@ pub struct PlasticBadgeSvgTemplateContext<'a> {
     message_color: &'a str,
 }
 pub mod measurer;
-/// shields.rs —— 纯 SVG 徽章生成库
-/// 只包含 SVG 生成逻辑，不涉及 web、IO、API
+/// shields.rs —— Pure SVG badge generation library
+/// Contains only SVG generation logic, without web, IO, or API involvement
 use serde::Deserialize;
 
-// --- 颜色处理工具模块 ---
-// 支持命名色、别名、hex、CSS 颜色输入的标准化与 SVG 输出
+// --- Color processing utility module ---
+// Supports standardization and SVG output of named colors, aliases, hex, and CSS color inputs
 
 mod color_util {
     use lru::LruCache;
@@ -94,7 +94,7 @@ mod color_util {
     use std::num::NonZeroUsize;
     use std::sync::Mutex;
 
-    // 命名色映射
+    // Named color mapping
     pub static NAMED_COLORS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
         HashMap::from([
             ("brightgreen", "#4c1"),
@@ -109,7 +109,7 @@ mod color_util {
         ])
     });
 
-    // 别名映射
+    // Alias mapping
     pub static ALIASES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
         HashMap::from([
             ("gray", "grey"),
@@ -122,21 +122,21 @@ mod color_util {
         ])
     });
 
-    // 3/6位hex校验
+    // 3/6 digit hex validation
     pub fn is_valid_hex(s: &str) -> bool {
         let s = s.trim_start_matches('#');
         let len = s.len();
         (len == 3 || len == 6) && s.chars().all(|c| c.is_ascii_hexdigit())
     }
 
-    // 简化版CSS颜色校验（支持 rgb(a)、hsl(a)、常见格式）
+    // Simplified CSS color validation (supports rgb(a), hsl(a), common formats)
     pub fn is_css_color(s: &str) -> bool {
         static CSS_COLOR_RE: Lazy<Regex> =
             Lazy::new(|| Regex::new(r"^(rgb|rgba|hsl|hsla)\s*\(").unwrap());
         CSS_COLOR_RE.is_match(s.trim())
     }
 
-    /// 标准化颜色输入，返回可用于SVG的字符串或None
+    /// Standardizes color input, returning a string usable in SVG or None
     pub fn normalize_color(color: &str) -> Option<String> {
         static CACHE: Lazy<Mutex<LruCache<String, Option<String>>>> =
             Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(256).unwrap())));
@@ -145,14 +145,14 @@ mod color_util {
             return None;
         }
         let key = color.to_ascii_lowercase();
-        // 先查缓存
+        // Check cache first
         if let Some(cached) = {
             let mut cache = CACHE.lock().unwrap();
             cache.get(&key).cloned()
         } {
             return cached;
         }
-        // 只在有大写字母时分配
+        // Allocate only if there are uppercase letters
         let lower = color.to_ascii_lowercase();
         let result = if NAMED_COLORS.contains_key(lower.as_str()) {
             Some(lower.to_string())
@@ -171,7 +171,7 @@ mod color_util {
         result
     }
 
-    /// 输出SVG可用颜色（hex字符串），优先命名色、别名，否则原样
+    /// Outputs SVG-compatible color (hex string), prioritizing named colors and aliases, otherwise original
     pub fn to_svg_color(color: &str) -> Option<String> {
         static CACHE: Lazy<Mutex<LruCache<String, Option<String>>>> =
             Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(256).unwrap())));
@@ -195,25 +195,25 @@ mod color_util {
         result
     }
 }
-/// 字体宽度计算 trait，主项目需实现并注入
+/// Font width calculation trait, to be implemented and injected by the main project
 pub trait FontMetrics {
-    /// 支持 font-family 顺序 fallback
+    /// Supports font-family fallback
     fn get_text_width_px(&self, text: &str, font_family: &str) -> f32;
 }
 
-/// 计算文本在 Verdana 11px 下的宽度（像素）
+/// Calculates the width of text in Verdana 11px (in pixels)
 ///
-/// - 仅需传入 text，内部自动加载并复用宽度表
-/// - 高效惰性初始化，避免重复 IO
-/// - 可直接用于 SVG 徽章等场景
+/// - Only the text needs to be passed in, the width table is loaded and reused internally
+/// - Efficient lazy initialization to avoid repeated IO
+/// - Can be directly used in scenarios like SVG badges
 pub fn get_text_width(text: &str) -> f64 {
     use crate::measurer::CharWidthMeasurer;
     use once_cell::sync::Lazy;
 
-    // 静态全局，首次调用时加载 JSON，后续复用
+    // Static global, loads JSON on first call, reuses afterwards
     static VERDANA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
         CharWidthMeasurer::load_sync("assets/fonts/verdana_11px.json")
-            .expect("无法加载 Verdana 11px 宽度表")
+            .expect("Unable to load Verdana 11px width table")
     });
 
     VERDANA_WIDTH_TABLE.width_of(text, true)
@@ -238,17 +238,17 @@ const HORIZONTAL_PADDING: u32 = 5;
 const FONT_FAMILY: &str = "Verdana,Geneva,DejaVu Sans,sans-serif";
 const FONT_SIZE_SCALED: u32 = 110;
 
-/// 根据背景色动态计算前景色与阴影色（等价 JS colorsForBackground）
+/// Dynamically calculates foreground and shadow colors based on background color (equivalent to JS colorsForBackground)
 ///
-/// - 输入：hex 颜色字符串（支持 3/6 位，如 "#4c1"、"#007ec6"）
-/// - 算法：
-///   1. 解析 hex 为 RGB
-///   2. 计算亮度 brightness = (0.299*R + 0.587*G + 0.114*B) / 255
-///   3. 若亮度 ≤ 0.69，返回 ("#fff", "#010101")，否则 ("#333", "#ccc")
+/// - Input: hex color string (supports 3/6 digits, e.g. "#4c1", "#007ec6")
+/// - Algorithm:
+///   1. Parses hex to RGB
+///   2. Calculates brightness = (0.299*R + 0.587*G + 0.114*B) / 255
+///   3. If brightness ≤ 0.69, returns ("#fff", "#010101"), otherwise ("#333", "#ccc")
 pub fn colors_for_background(hex: &str) -> (&'static str, &'static str) {
-    // 去除前导 #
+    // Remove leading #
     let hex = hex.trim_start_matches('#');
-    // 解析 RGB
+    // Parse RGB
     let (r, g, b) = match hex.len() {
         3 => (
             {
@@ -287,9 +287,9 @@ pub fn colors_for_background(hex: &str) -> (&'static str, &'static str) {
             u8::from_str_radix(&hex[2..4], 16).unwrap_or(0),
             u8::from_str_radix(&hex[4..6], 16).unwrap_or(0),
         ),
-        _ => (0, 0, 0), // 非法输入，返回黑色
+        _ => (0, 0, 0), // Invalid input, return black
     };
-    // W3C 推荐亮度公式
+    // W3C recommended brightness formula
     let brightness = (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0;
     if brightness <= 0.69 {
         ("#fff", "#010101")
@@ -379,9 +379,9 @@ pub struct RenderBadgeParams<'a> {
     pub message_color: &'a str,
 }
 
-/// 公开 API：生成 SVG 字符串
+/// Public API: Generate SVG string
 pub fn render_badge_svg(params: &RenderBadgeParams) -> String {
-    // 颜色标准化处理，兼容命名色、别名、hex、CSS
+    // Color standardization processing, compatible with named colors, aliases, hex, CSS
     use crate::color_util::to_svg_color;
     let label_color =
         to_svg_color(params.label_color).unwrap_or_else(|| default_label_color().to_string());
@@ -407,7 +407,7 @@ fn create_accessible_text(label: Option<&str>, message: &str) -> String {
     buf
 }
 
-// --- 通用 Badge 渲染函数 ---
+// --- General Badge Rendering Function ---
 fn render_badge(
     label: Option<&str>,
     message: &str,
@@ -472,7 +472,7 @@ fn render_badge(
             let label_width_scaled = label_width * 10;
             match base {
                 BaseBadgeStyle::Flat => {
-                    // 计算 label/message 区域的前景色与阴影色
+                    // Calculate foreground and shadow colors for label/message area
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
@@ -522,7 +522,7 @@ fn render_badge(
                     .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
                 BaseBadgeStyle::FlatSquare => {
-                    // 计算 label/message 区域的前景色与阴影色
+                    // Calculate foreground and shadow colors for label/message area
                     let (label_text_color, _) = colors_for_background(label_color);
                     let (message_text_color, _) = colors_for_background(message_color);
                     FlatSquareBadgeSvgTemplateContext {
@@ -550,14 +550,14 @@ fn render_badge(
                 }
 
                 BaseBadgeStyle::Plastic => {
-                    // 谜之特殊逻辑，兼容 shield.io 的实现
+                    // Mysterious special logic, compatible with shield.io implementation
                     let label_color = if has_label {
                         label_color
                     } else {
                         message_color
                     };
 
-                    // 渐变色可根据原实现自定义，也可参数化
+                    // Gradient colors can be customized as in the original implementation, or parameterized
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
@@ -591,7 +591,7 @@ fn render_badge(
     }
 }
 
-// --- Badge 结构体及链式 API 实现 ---
+// --- Badge struct and chainable API implementation ---
 #[derive(Debug, Clone)]
 pub struct Badge {
     style: BadgeStyle,
@@ -602,7 +602,7 @@ pub struct Badge {
 }
 
 impl Badge {
-    /// 创建默认 Badge 实例
+    /// Create default Badge instance
     pub fn new() -> Self {
         Badge {
             style: BadgeStyle::default(),
@@ -613,37 +613,37 @@ impl Badge {
         }
     }
 
-    /// 设置 label
+    /// Set label
     pub fn set_label(mut self, label: impl Into<String>) -> Self {
         self.label = Some(label.into());
         self
     }
 
-    /// 设置 message
+    /// Set message
     pub fn set_message(mut self, message: impl Into<String>) -> Self {
         self.message = message.into();
         self
     }
 
-    /// 设置 style
+    /// Set style
     pub fn set_style(mut self, style: BadgeStyle) -> Self {
         self.style = style;
         self
     }
 
-    /// 设置 label_color
+    /// Set label_color
     pub fn set_label_color(mut self, color: impl Into<String>) -> Self {
         self.label_color = color.into();
         self
     }
 
-    /// 设置 message_color
+    /// Set message_color
     pub fn set_message_color(mut self, color: impl Into<String>) -> Self {
         self.message_color = color.into();
         self
     }
 
-    /// 渲染 SVG 字符串
+    /// Render SVG string
     pub fn render(&self) -> String {
         let params = RenderBadgeParams {
             style: self.style,
@@ -661,7 +661,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_svg() {
-        // 测试 SVG 渲染
+        // Test SVG rendering
         let params = RenderBadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("build"),
@@ -670,12 +670,12 @@ mod tests {
             message_color: "#4c1",
         };
         let svg = render_badge_svg(&params);
-        assert!(!svg.is_empty(), "SVG 渲染失败");
+        assert!(!svg.is_empty(), "SVG rendering failed");
     }
 
     #[test]
     fn test_svg_chain() {
-        // 测试链式 API
+        // Test chainable API
         let svg = Badge::new()
             .set_label("build")
             .set_message("passing")
@@ -683,7 +683,7 @@ mod tests {
             .set_label_color("#333")
             .set_message_color("#4c1")
             .render();
-        assert!(!svg.is_empty(), "SVG 渲染失败");
+        assert!(!svg.is_empty(), "SVG rendering failed");
     }
     #[test]
     fn test_named_color() {
@@ -697,9 +697,12 @@ mod tests {
         let svg = render_badge_svg(&params);
         assert!(
             svg.contains("fill=\"#4c1\""),
-            "命名色 brightgreen 未正确映射"
+            "Named color brightgreen not correctly mapped"
         );
-        assert!(svg.contains("fill=\"#007ec6\""), "命名色 blue 未正确映射");
+        assert!(
+            svg.contains("fill=\"#007ec6\""),
+            "Named color blue not correctly mapped"
+        );
     }
 
     #[test]
@@ -712,8 +715,14 @@ mod tests {
             message_color: "critical",
         };
         let svg = render_badge_svg(&params);
-        assert!(svg.contains("fill=\"#555\""), "别名 gray 未正确映射");
-        assert!(svg.contains("fill=\"#e05d44\""), "别名 critical 未正确映射");
+        assert!(
+            svg.contains("fill=\"#555\""),
+            "Alias gray not correctly mapped"
+        );
+        assert!(
+            svg.contains("fill=\"#e05d44\""),
+            "Alias critical not correctly mapped"
+        );
     }
 
     #[test]
@@ -726,8 +735,14 @@ mod tests {
             message_color: "dfb317",
         };
         let svg = render_badge_svg(&params);
-        assert!(svg.contains("fill=\"#4c1\""), "3位hex未正确处理");
-        assert!(svg.contains("fill=\"#dfb317\""), "6位hex未正确处理");
+        assert!(
+            svg.contains("fill=\"#4c1\""),
+            "3-digit hex not correctly processed"
+        );
+        assert!(
+            svg.contains("fill=\"#dfb317\""),
+            "6-digit hex not correctly processed"
+        );
     }
 
     #[test]
@@ -742,11 +757,11 @@ mod tests {
         let svg = render_badge_svg(&params);
         assert!(
             svg.contains(r#"fill="rgb(0,128,0)""#),
-            "CSS rgb 颜色未正确处理"
+            "CSS rgb color not correctly processed"
         );
         assert!(
             svg.contains(r#"fill="hsl(120,100%,25%)""#),
-            "CSS hsl 颜色未正确处理"
+            "CSS hsl color not correctly processed"
         );
     }
 
@@ -762,11 +777,11 @@ mod tests {
         let svg = render_badge_svg(&params);
         assert!(
             svg.contains("fill=\"#555\""),
-            "非法 label_color 未 fallback 到默认色"
+            "Invalid label_color did not fallback to default color"
         );
         assert!(
             svg.contains("fill=\"#007ec6\""),
-            "空 message_color 未 fallback 到默认色"
+            "Empty message_color did not fallback to default color"
         );
     }
 }
