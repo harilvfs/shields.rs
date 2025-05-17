@@ -99,3 +99,58 @@ impl CharWidthMeasurer {
         total
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_control_chars() {
+        assert!(CharWidthMeasurer::is_control_char(0));
+        assert!(CharWidthMeasurer::is_control_char(31));
+        assert!(CharWidthMeasurer::is_control_char(127));
+        assert!(!CharWidthMeasurer::is_control_char(32));
+        assert!(!CharWidthMeasurer::is_control_char(128));
+    }
+
+    #[test]
+    fn test_from_data() {
+        let data = vec![(65, 90, 10.0), (97, 122, 8.0)]; // A-Z 10宽度, a-z 8宽度
+        let measurer = CharWidthMeasurer::from_data(data);
+
+        assert_eq!(measurer.width_of_char_code(65), Some(10.0)); // 'A'
+        assert_eq!(measurer.width_of_char_code(90), Some(10.0)); // 'Z'
+        assert_eq!(measurer.width_of_char_code(97), Some(8.0)); // 'a'
+        assert_eq!(measurer.width_of_char_code(122), Some(8.0)); // 'z'
+        assert_eq!(measurer.width_of_char_code(64), None); // '@'
+    }
+
+    #[test]
+    fn test_width_of() {
+        let data = vec![
+            (65, 90, 10.0),   // A-Z 10宽度
+            (97, 122, 8.0),   // a-z 8宽度
+            (109, 109, 16.0), // 特别设置 'm' 宽度为16，以便测试
+        ];
+        let measurer = CharWidthMeasurer::from_data(data);
+
+        // 检查 em_width 是否正确设置
+        assert_eq!(measurer.em_width, 16.0);
+
+        // 测试字符串宽度计算
+        assert_eq!(measurer.width_of("ABC", true), 30.0);
+        assert_eq!(measurer.width_of("abc", true), 24.0);
+        assert_eq!(measurer.width_of("Am", true), 26.0);
+
+        // 测试猜测模式
+        assert_eq!(measurer.width_of("A測", true), 10.0 + 16.0); // '測'未知，用em_width
+    }
+
+    #[test]
+    #[should_panic(expected = "No width available for character code")]
+    fn test_width_of_no_guess() {
+        let data = vec![(65, 90, 10.0)];
+        let measurer = CharWidthMeasurer::from_data(data);
+        measurer.width_of("A測", false); // 应该为'測'panic
+    }
+}
