@@ -423,6 +423,41 @@ fn test_svg_compare() {
             label_color: "blue",
             message_color: "red",
         },
+        RenderBadgeParams {
+            style: BadgeStyle::social(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "blue",
+            message_color: "red",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::social(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "#fff",
+            message_color: "#fff",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::social(),
+            label: Some(""),
+            message: "1234",
+            label_color: "blue",
+            message_color: "red",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::social(),
+            label: None,
+            message: "1234",
+            label_color: "blue",
+            message_color: "red",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::social(),
+            label: None,
+            message: "",
+            label_color: "blue",
+            message_color: "red",
+        },
     ];
 
     for params in test_cases {

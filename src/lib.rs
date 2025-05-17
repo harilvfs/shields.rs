@@ -1,4 +1,4 @@
-use askama::Template;
+use askama::{Template, filters::capitalize};
 
 /// SVG rendering template context, fields must correspond to variables in badge_svg_template_askama.svg
 #[derive(Template)]
@@ -201,22 +201,36 @@ pub trait FontMetrics {
     fn get_text_width_px(&self, text: &str, font_family: &str) -> f32;
 }
 
+#[derive(Eq, PartialEq, Hash, Clone, Debug)]
+pub enum Font {
+    VerdanaNormal,
+    HelveticaBold,
+}
+
 /// Calculates the width of text in Verdana 11px (in pixels)
 ///
 /// - Only the text needs to be passed in, the width table is loaded and reused internally
 /// - Efficient lazy initialization to avoid repeated IO
 /// - Can be directly used in scenarios like SVG badges
-pub fn get_text_width(text: &str) -> f64 {
+pub fn get_text_width(text: &str, font: Font) -> f64 {
     use crate::measurer::CharWidthMeasurer;
     use once_cell::sync::Lazy;
 
     // Static global, loads JSON on first call, reuses afterwards
     static VERDANA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
-        CharWidthMeasurer::load_sync("assets/fonts/verdana_11px.json")
+        CharWidthMeasurer::load_sync("assets/fonts/verdana-11px-normal.json")
             .expect("Unable to load Verdana 11px width table")
     });
 
-    VERDANA_WIDTH_TABLE.width_of(text, true)
+    static HELVETICA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
+        CharWidthMeasurer::load_sync("assets/fonts/helvetica-11px-bold.json")
+            .expect("Unable to load Helvetica Bold width table")
+    });
+
+    match font {
+        Font::VerdanaNormal => VERDANA_WIDTH_TABLE.width_of(text, true),
+        Font::HelveticaBold => HELVETICA_WIDTH_TABLE.width_of(text, true),
+    }
 }
 
 macro_rules! round_up_to_odd_float {
@@ -237,7 +251,7 @@ const BADGE_HEIGHT: u32 = 20;
 const HORIZONTAL_PADDING: u32 = 5;
 const FONT_FAMILY: &str = "Verdana,Geneva,DejaVu Sans,sans-serif";
 const FONT_SIZE_SCALED: u32 = 110;
-
+const FONT_SCALE_UP_FACTOR: u32 = 10;
 /// Dynamically calculates foreground and shadow colors based on background color (equivalent to JS colorsForBackground)
 ///
 /// - Input: hex color string (supports 3/6 digits, e.g. "#4c1", "#007ec6")
@@ -297,28 +311,31 @@ pub fn colors_for_background(hex: &str) -> (&'static str, &'static str) {
         ("#333", "#ccc")
     }
 }
-pub(crate) fn preferred_width_of(text: &str) -> u32 {
+pub(crate) fn preferred_width_of(text: &str, font: Font) -> u32 {
     use lru::LruCache;
     use once_cell::sync::Lazy;
     use std::num::NonZeroUsize;
     use std::sync::Mutex;
 
-    static WIDTH_CACHE: Lazy<Mutex<LruCache<String, u32>>> =
+    // Create a cache that includes font information in the key
+    static WIDTH_CACHE: Lazy<Mutex<LruCache<(String, Font), u32>>> =
         Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())));
+
+    let cache_key = (text.to_string(), font.clone());
 
     {
         let mut cache = WIDTH_CACHE.lock().unwrap();
-        if let Some(&cached) = cache.get(text) {
+        if let Some(&cached) = cache.get(&cache_key) {
             return cached;
         }
     }
 
-    let width = get_text_width(text);
+    let width = get_text_width(text, font);
     let rounded = round_up_to_odd_f64(width);
 
     if text.len() <= 1024 {
         let mut cache = WIDTH_CACHE.lock().unwrap();
-        cache.put(text.to_string(), rounded);
+        cache.put(cache_key, rounded);
     }
 
     rounded
@@ -438,7 +455,7 @@ fn render_badge(
             let label_margin = total_logo_width + 1;
 
             let label_width = if has_label {
-                preferred_width_of(label.unwrap())
+                preferred_width_of(label.unwrap(), Font::VerdanaNormal)
             } else {
                 0
             };
@@ -454,7 +471,7 @@ fn render_badge(
                     left_width -= 1;
                 }
             }
-            let message_width = preferred_width_of(message);
+            let message_width = preferred_width_of(message, Font::VerdanaNormal);
             let mut message_margin: i32 =
                 left_width as i32 - if message.is_empty() { 0 } else { 1 };
             if !has_label {
@@ -605,7 +622,76 @@ fn render_badge(
                 }
             }
         }
-        _ => "".to_string(),
+        BadgeStyle::Social => {
+            let label = label.unwrap_or("");
+            let accessible_text = create_accessible_text(Some(label), message);
+            let internal_height = 19;
+            let label_horizontal_padding = 5;
+            let message_horizontal_padding = 4;
+            let horizontal_gutter = 6;
+            let logo_width = 0;
+            let logo_padding = 0;
+
+            let total_logo_width = logo_width + logo_padding;
+            let label_text_width = preferred_width_of(label, Font::HelveticaBold);
+
+            let label_rect_width =
+                label_text_width + total_logo_width + 2 * label_horizontal_padding;
+
+            let message_text_width = preferred_width_of(message, Font::HelveticaBold);
+
+            let message_rect_width = message_text_width + 2 * message_horizontal_padding;
+            let has_message = !message.is_empty();
+
+            let left_link = "";
+            let right_link = "";
+            let has_left_link = !left_link.is_empty();
+            let has_right_link = !right_link.is_empty();
+            let has_link = has_left_link || has_right_link;
+
+            let message_bubble_main_x = label_rect_width as f32 + horizontal_gutter as f32 + 0.5;
+            let message_bubble_notch_x = label_rect_width + horizontal_gutter;
+            let label_text_x = FONT_SCALE_UP_FACTOR as f32
+                * (total_logo_width as f32
+                    + label_text_width as f32 / 2.0
+                    + label_horizontal_padding as f32);
+            let message_text_x = FONT_SCALE_UP_FACTOR as f32
+                * (label_rect_width as f32
+                    + horizontal_gutter as f32
+                    + message_rect_width as f32 / 2.0);
+            let message_text_length = FONT_SCALE_UP_FACTOR * message_text_width;
+            let label_text_length = FONT_SCALE_UP_FACTOR * label_text_width;
+
+            let left_width = label_rect_width + 1;
+            let right_width = if has_message {
+                horizontal_gutter + message_rect_width
+            } else {
+                0
+            };
+            let total_width = left_width + right_width;
+
+            let l = capitalize(label).unwrap().to_string();
+            let l: &str = l.as_str();
+            SocialBadgeSvgTemplateContext {
+                total_width: total_width as i32,
+                total_height: BADGE_HEIGHT as i32,
+                internal_height: internal_height,
+                accessible_text: accessible_text.as_str(),
+                message_rect_width: message_rect_width,
+                message_bubble_main_x,
+                message_bubble_notch_x,
+                label_text_length,
+                label: l,
+                has_message,
+                message,
+                label_text_x,
+                message_text_x,
+                message_text_length,
+                label_rect_width,
+            }
+            .render()
+            .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
+        }
     }
 }
 
@@ -802,4 +888,25 @@ mod tests {
             "Empty message_color did not fallback to default color"
         );
     }
+}
+
+/// social SVG rendering template context
+#[derive(Template)]
+#[template(path = "social_badge_template.svg", escape = "none")]
+pub struct SocialBadgeSvgTemplateContext<'a> {
+    total_width: i32,
+    total_height: i32,
+    internal_height: u32,
+    accessible_text: &'a str,
+    label_rect_width: u32,
+    message_bubble_main_x: f32,
+    message_rect_width: u32,
+    message_bubble_notch_x: u32,
+    label_text_x: f32,
+    label_text_length: u32,
+    label: &'a str,
+    message_text_x: f32,
+    message_text_length: u32,
+    message: &'a str,
+    has_message: bool,
 }
