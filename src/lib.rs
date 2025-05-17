@@ -2,8 +2,8 @@ use askama::Template;
 
 /// SVG 渲染模板上下文，字段需与 badge_svg_template_askama.svg 中变量一一对应
 #[derive(Template)]
-#[template(path = "badge_svg_template.svg", escape = "none")]
-struct BadgeSvgTemplateContext<'a> {
+#[template(path = "flat_badge_template.svg", escape = "none")]
+struct FlatBadgeSvgTemplateContext<'a> {
     total_width: i32,
     badge_height: i32,
     accessible_text: &'a str,
@@ -440,23 +440,30 @@ fn render_badge(
                         String::new()
                     };
 
-                    BadgeSvgTemplateContext {
-                        total_width: total_width as i32,
-                        badge_height: BADGE_HEIGHT as i32,
+                    FlatBadgeSvgTemplateContext {
+                        font_family: FONT_FAMILY,
+
                         accessible_text: accessible_text.as_str(),
+                        badge_height: BADGE_HEIGHT as i32,
+
                         left_width: left_width as i32,
                         right_width: right_width as i32,
+                        total_width: total_width as i32,
+
                         label_color,
                         message_color,
                         rx,
-                        font_family: FONT_FAMILY,
+
                         font_size_scaled: FONT_SIZE_SCALED as i32,
+
                         has_label: has_label,
+
                         label: label.unwrap_or(""),
                         label_x: label_x,
                         label_width_scaled: label_width_scaled as i32,
                         label_text_color,
                         label_shadow_color,
+
                         message_x,
                         message_shadow_color,
                         message_text_color,
