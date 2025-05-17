@@ -60,15 +60,10 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
 #[template(path = "plastic_badge_template.svg", escape = "none")]
 pub struct PlasticBadgeSvgTemplateContext<'a> {
     total_width: i32,
-    badge_height: i32,
     accessible_text: &'a str,
     left_width: i32,
     right_width: i32,
     // 渐变色
-    gradient_start: &'a str,
-    gradient_end: &'a str,
-    // 圆角
-    rx: i32,
     has_label: bool,
     label: &'a str,
     label_x: f32,
@@ -82,8 +77,6 @@ pub struct PlasticBadgeSvgTemplateContext<'a> {
     message_shadow_color: &'a str,
     label_color: &'a str,
     message_color: &'a str,
-    font_family: &'a str,
-    font_size_scaled: i32,
 }
 pub mod measurer;
 /// shields.rs —— 纯 SVG 徽章生成库
@@ -565,21 +558,15 @@ fn render_badge(
                     };
 
                     // 渐变色可根据原实现自定义，也可参数化
-                    let (gradient_start, gradient_end) = ("#fff", "#000");
-                    let rx = 4;
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
                     let has_label = label.map_or(false, |l| !l.is_empty());
                     let context = PlasticBadgeSvgTemplateContext {
                         total_width: total_width as i32,
-                        badge_height: BADGE_HEIGHT as i32,
                         left_width: left_width as i32,
                         right_width: right_width as i32,
                         accessible_text: accessible_text.as_str(),
-                        gradient_start,
-                        gradient_end,
-                        rx,
                         has_label,
                         label: label.unwrap_or(""),
                         label_x,
@@ -593,8 +580,6 @@ fn render_badge(
                         message_shadow_color,
                         label_color,
                         message_color,
-                        font_family: FONT_FAMILY,
-                        font_size_scaled: FONT_SIZE_SCALED as i32,
                     };
                     context
                         .render()
