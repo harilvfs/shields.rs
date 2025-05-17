@@ -101,8 +101,6 @@ struct SocialBadgeSvgTemplateContext<'a> {
     message_text_x: f32,
     message_text_length: u32,
     message: &'a str,
-    has_message: bool,
-    has_link: bool,
 
     link: &'a str,
     extra_link: &'a str,
@@ -461,9 +459,6 @@ fn render_badge(
     link: Option<&str>,
     extra_link: Option<&str>,
 ) -> String {
-    let has_left_link = link.is_some() && !link.unwrap().is_empty();
-    let has_right_link = extra_link.is_some() && !extra_link.unwrap().is_empty();
-    let has_link = has_left_link || has_right_link;
     let has_label_color = label_color.is_some() && !label_color.unwrap().is_empty();
     let label_color = to_svg_color(label_color.unwrap_or("#555")).unwrap_or("#555".to_string());
     let message_color = to_svg_color(message_color).unwrap_or("#007ec6".to_string());
@@ -678,13 +673,11 @@ fn render_badge(
                 message_bubble_notch_x,
                 label_text_length,
                 label: label_str,
-                has_message,
                 message,
                 label_text_x,
                 message_text_x,
                 message_text_length,
                 label_rect_width,
-                has_link,
                 link: link.unwrap_or(""),
                 extra_link: extra_link.unwrap_or(""),
             }
