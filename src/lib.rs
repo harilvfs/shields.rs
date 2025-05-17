@@ -626,7 +626,9 @@ fn render_badge(
         }
         BadgeStyle::Social => {
             let label = label.unwrap_or("");
-            let accessible_text = create_accessible_text(Some(label), message);
+            let label = capitalize(label).unwrap().to_string();
+            let label_str = label.as_str();
+            let accessible_text = create_accessible_text(Some(label_str), message);
             let internal_height = 19;
             let label_horizontal_padding = 5;
             let message_horizontal_padding = 4;
@@ -635,7 +637,7 @@ fn render_badge(
             let logo_padding = 0;
 
             let total_logo_width = logo_width + logo_padding;
-            let label_text_width = preferred_width_of(label, Font::HelveticaBold);
+            let label_text_width = preferred_width_of(label_str, Font::HelveticaBold);
 
             let label_rect_width =
                 label_text_width + total_logo_width + 2 * label_horizontal_padding;
@@ -666,8 +668,6 @@ fn render_badge(
             };
             let total_width = left_width + right_width;
 
-            let l = capitalize(label).unwrap().to_string();
-            let l: &str = l.as_str();
             SocialBadgeSvgTemplateContext {
                 total_width: total_width as i32,
                 total_height: BADGE_HEIGHT as i32,
@@ -677,7 +677,7 @@ fn render_badge(
                 message_bubble_main_x,
                 message_bubble_notch_x,
                 label_text_length,
-                label: l,
+                label: label_str,
                 has_message,
                 message,
                 label_text_x,
