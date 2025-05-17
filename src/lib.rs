@@ -48,8 +48,6 @@ const FONT_FAMILY: &str = "Verdana,Geneva,DejaVu Sans,sans-serif";
 const FONT_SIZE_SCALED: u32 = 110;
 
 pub(crate) fn preferred_width_of(text: &str) -> u32 {
-    // 优化点2：为文本宽度计算增加静态 LRU 缓存，避免重复计算
-    // 优化说明：同一文本多次出现时直接命中缓存，减少重复计算和内存分配
     use lru::LruCache;
     use once_cell::sync::Lazy;
     use std::num::NonZeroUsize;
@@ -57,19 +55,22 @@ pub(crate) fn preferred_width_of(text: &str) -> u32 {
 
     static WIDTH_CACHE: Lazy<Mutex<LruCache<String, u32>>> =
         Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(1024).unwrap())));
-    let mut cache = WIDTH_CACHE.lock().unwrap();
-    if let Some(&cached) = cache.get(text) {
-        return cached;
+
+    {
+        let mut cache = WIDTH_CACHE.lock().unwrap();
+        if let Some(&cached) = cache.get(text) {
+            return cached;
+        }
     }
 
     let width = get_text_width(text);
     let rounded = round_up_to_odd_f64(width);
-    {
+
+    if text.len() <= 1024 {
         let mut cache = WIDTH_CACHE.lock().unwrap();
-        if text.len() <= 64 {
-            cache.put(text.to_string(), rounded);
-        }
+        cache.put(text.to_string(), rounded);
     }
+
     rounded
 }
 
