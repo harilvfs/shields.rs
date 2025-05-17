@@ -307,10 +307,8 @@ fn test_svg_compare() {
     }
 
     for params in test_cases {
-        println!("测试参数: {:?}", params);
         let local_svg = render_badge_svg(&params);
         let url = shields_io_url(&params);
-        println!("url: {:?}", url);
         let local_svg_norm = normalize_svg(&local_svg);
         let shields_svg = get_shields_svg_with_cache(&params, &url);
         let shields_svg_norm = normalize_svg(&shields_svg);

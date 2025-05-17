@@ -537,77 +537,67 @@ fn render_badge(
             } else {
                 message_color
             };
+            // Gradient colors can be customized as in the original implementation, or parameterized
+            let (label_text_color, label_shadow_color) = colors_for_background(label_color);
+            let (message_text_color, message_shadow_color) = colors_for_background(message_color);
 
             match base {
-                BaseBadgeStyle::Flat => {
-                    // let has_label = !label.unwrap_or("").is_empty();
-                    // Calculate foreground and shadow colors for label/message area
-                    let (label_text_color, label_shadow_color) = colors_for_background(label_color);
-                    let (message_text_color, message_shadow_color) =
-                        colors_for_background(message_color);
+                BaseBadgeStyle::Flat => FlatBadgeSvgTemplateContext {
+                    font_family: FONT_FAMILY,
 
-                    FlatBadgeSvgTemplateContext {
-                        font_family: FONT_FAMILY,
+                    accessible_text: accessible_text.as_str(),
+                    badge_height: BADGE_HEIGHT as i32,
 
-                        accessible_text: accessible_text.as_str(),
-                        badge_height: BADGE_HEIGHT as i32,
+                    left_width: left_width as i32,
+                    right_width: right_width as i32,
+                    total_width: total_width as i32,
 
-                        left_width: left_width as i32,
-                        right_width: right_width as i32,
-                        total_width: total_width as i32,
+                    label_color,
+                    message_color,
+                    rx,
 
-                        label_color,
-                        message_color,
-                        rx,
+                    font_size_scaled: FONT_SIZE_SCALED as i32,
 
-                        font_size_scaled: FONT_SIZE_SCALED as i32,
+                    label: label.unwrap_or(""),
+                    label_x: label_x,
+                    label_width_scaled: label_width_scaled as i32,
+                    label_text_color,
+                    label_shadow_color,
 
-                        label: label.unwrap_or(""),
-                        label_x: label_x,
-                        label_width_scaled: label_width_scaled as i32,
-                        label_text_color,
-                        label_shadow_color,
+                    message_x,
+                    message_shadow_color,
+                    message_text_color,
+                    message_width_scaled: message_width_scaled as i32,
+                    message,
 
-                        message_x,
-                        message_shadow_color,
-                        message_text_color,
-                        message_width_scaled: message_width_scaled as i32,
-                        message,
-
-                        has_link,
-                        link: link.unwrap_or(""),
-                    }
-                    .render()
-                    .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
+                    has_link,
+                    link: link.unwrap_or(""),
                 }
-                BaseBadgeStyle::FlatSquare => {
-                    // Calculate foreground and shadow colors for label/message area
-                    let (label_text_color, _) = colors_for_background(label_color);
-                    let (message_text_color, _) = colors_for_background(message_color);
-                    FlatSquareBadgeSvgTemplateContext {
-                        font_family: FONT_FAMILY,
-                        accessible_text: accessible_text.as_str(),
-                        badge_height: BADGE_HEIGHT as i32,
-                        left_width: left_width as i32,
-                        right_width: right_width as i32,
-                        total_width: total_width as i32,
-                        label_color,
-                        message_color,
-                        font_size_scaled: FONT_SIZE_SCALED as i32,
-                        label: label.unwrap_or(""),
-                        label_x,
-                        label_width_scaled: label_width_scaled as i32,
-                        label_text_color,
-                        message_x,
-                        message_text_color,
-                        message_width_scaled: message_width_scaled as i32,
-                        message,
-                        has_link,
-                        link: link.unwrap_or(""),
-                    }
-                    .render()
-                    .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
+                .render()
+                .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
+                BaseBadgeStyle::FlatSquare => FlatSquareBadgeSvgTemplateContext {
+                    font_family: FONT_FAMILY,
+                    accessible_text: accessible_text.as_str(),
+                    badge_height: BADGE_HEIGHT as i32,
+                    left_width: left_width as i32,
+                    right_width: right_width as i32,
+                    total_width: total_width as i32,
+                    label_color,
+                    message_color,
+                    font_size_scaled: FONT_SIZE_SCALED as i32,
+                    label: label.unwrap_or(""),
+                    label_x,
+                    label_width_scaled: label_width_scaled as i32,
+                    label_text_color,
+                    message_x,
+                    message_text_color,
+                    message_width_scaled: message_width_scaled as i32,
+                    message,
+                    has_link,
+                    link: link.unwrap_or(""),
                 }
+                .render()
+                .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
 
                 BaseBadgeStyle::Plastic => {
                     // Plastic is different from Flat and FlatSquar
@@ -619,14 +609,6 @@ fn render_badge(
                     };
 
                     let accessible_text = create_accessible_text(label, message);
-
-                    // Gradient colors can be customized as in the original implementation, or parameterized
-                    let (label_text_color, label_shadow_color) = colors_for_background(label_color);
-                    let (message_text_color, message_shadow_color) =
-                        colors_for_background(message_color);
-
-                    println!("has_link: {}", has_link);
-
                     let context = PlasticBadgeSvgTemplateContext {
                         total_width: total_width as i32,
                         left_width: left_width as i32,
