@@ -598,41 +598,28 @@ fn render_badge(
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
-
-                BaseBadgeStyle::Plastic => {
-                    // Plastic is different from Flat and FlatSquar
-                    let has_label = !label.unwrap_or("").is_empty();
-                    let label_color = if has_label || has_label_color {
-                        label_color
-                    } else {
-                        message_color
-                    };
-
-                    let accessible_text = create_accessible_text(label, message);
-                    let context = PlasticBadgeSvgTemplateContext {
-                        total_width: total_width as i32,
-                        left_width: left_width as i32,
-                        right_width: right_width as i32,
-                        accessible_text: accessible_text.as_str(),
-                        label: label.unwrap_or(""),
-                        label_x,
-                        label_text_length: label_width_scaled as i32,
-                        label_text_color,
-                        label_shadow_color,
-                        message,
-                        message_x,
-                        message_text_length: message_width_scaled as i32,
-                        message_text_color,
-                        message_shadow_color,
-                        label_color,
-                        message_color,
-                        has_link,
-                        link: link.unwrap_or(""),
-                    };
-                    context
-                        .render()
-                        .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
+                BaseBadgeStyle::Plastic => PlasticBadgeSvgTemplateContext {
+                    total_width: total_width as i32,
+                    left_width: left_width as i32,
+                    right_width: right_width as i32,
+                    accessible_text: accessible_text.as_str(),
+                    label: label.unwrap_or(""),
+                    label_x,
+                    label_text_length: label_width_scaled as i32,
+                    label_text_color,
+                    label_shadow_color,
+                    message,
+                    message_x,
+                    message_text_length: message_width_scaled as i32,
+                    message_text_color,
+                    message_shadow_color,
+                    label_color,
+                    message_color,
+                    has_link,
+                    link: link.unwrap_or(""),
                 }
+                .render()
+                .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
             }
         }
         BadgeStyle::Social => {
