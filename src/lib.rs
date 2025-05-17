@@ -410,6 +410,10 @@ pub fn default_message_color() -> &'static str {
     "#007ec6"
 }
 
+pub fn default_label_color() -> &'static str {
+    "#555"
+}
+
 #[derive(Deserialize, Debug)]
 pub struct BadgeParams<'a> {
     #[serde(default)]
@@ -695,6 +699,8 @@ pub struct Badge {
     message: String,
     label_color: String,
     message_color: String,
+    link: Option<String>,
+    extra_link: Option<String>,
 }
 
 impl Badge {
@@ -704,8 +710,10 @@ impl Badge {
             style: BadgeStyle::default(),
             label: None,
             message: String::new(),
-            label_color: "#555".to_string(),
+            label_color: default_label_color().to_string(),
             message_color: default_message_color().to_string(),
+            link: None,
+            extra_link: None,
         }
     }
 
@@ -739,6 +747,11 @@ impl Badge {
         self
     }
 
+    pub fn set_link(mut self, link: impl Into<String>) -> Self {
+        self.link = Some(link.into());
+        self
+    }
+
     /// Render SVG string
     pub fn render(&self) -> String {
         let params = BadgeParams {
@@ -747,8 +760,8 @@ impl Badge {
             message: &self.message,
             label_color: Some(&self.label_color),
             message_color: &self.message_color,
-            link: None,
-            extra_link: None,
+            link: self.link.as_deref(),
+            extra_link: self.extra_link.as_deref(),
         };
         render_badge_svg(&params)
     }
