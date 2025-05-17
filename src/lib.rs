@@ -1,3 +1,34 @@
+use askama::Template;
+
+/// SVG 渲染模板上下文，字段需与 badge_svg_template_askama.svg 中变量一一对应
+#[derive(Template)]
+#[template(path = "badge_svg_template.svg", escape = "none")]
+struct BadgeSvgTemplateContext<'a> {
+    total_width: i32,
+    badge_height: i32,
+    accessible_text: &'a str,
+    left_width: i32,
+    right_width: i32,
+    label_color: &'a str,
+    message_color: &'a str,
+    rx: i32,
+    font_family: &'a str,
+    font_size_scaled: i32,
+
+    has_label: bool,
+
+    label: &'a str,
+    label_x: f32,
+    label_width_scaled: i32,
+    label_text_color: &'a str,
+    label_shadow_color: &'a str,
+
+    message: &'a str,
+    message_x: f32,
+    message_shadow_color: &'a str,
+    message_text_color: &'a str,
+    message_width_scaled: i32,
+}
 // 声明 measurer 模块为公有，确保 crate::measurer 可用
 pub mod measurer;
 /// shields.rs —— 纯 SVG 徽章生成库
@@ -397,7 +428,7 @@ fn render_badge(
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
-                    let label_svg = if has_label {
+                    let _label_svg = if has_label {
                         let label = label.unwrap();
                         format!(
                             r##"<text aria-hidden="true" x="{label_x}" y="150" fill="{label_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{label_width_scaled}">{label}</text>
@@ -409,43 +440,31 @@ fn render_badge(
                         String::new()
                     };
 
-                    format!(
-                        r##"<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{BADGE_HEIGHT}" role="img" aria-label="{accessible_text}">
-                            <title>{accessible_text}</title>
-                            <linearGradient id="s" x2="0" y2="100%">
-                                <stop offset="0" stop-color="#bbb" stop-opacity=".1"/>
-                                <stop offset="1" stop-opacity=".1"/>
-                            </linearGradient>
-                            <clipPath id="r">
-                                <rect width="{total_width}" height="{BADGE_HEIGHT}" rx="{rx}" fill="#fff"/>
-                            </clipPath>
-                            <g clip-path="url(#r)">
-                                <rect width="{left_width}" height="{BADGE_HEIGHT}" fill="{label_color}"/>
-                                <rect x="{left_width}" width="{right_width}" height="{BADGE_HEIGHT}" fill="{message_color}"/>
-                                <rect width="{total_width}" height="{BADGE_HEIGHT}" fill="url(#s)"/>
-                            </g>
-                            <g fill="#fff" text-anchor="middle" font-family="{FONT_FAMILY}" text-rendering="geometricPrecision" font-size="{FONT_SIZE_SCALED}">
-                                {label_svg}
-                                <text aria-hidden="true" x="{message_x}" y="150" fill="{message_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{message_width_scaled}">{message}</text>
-                                <text x="{message_x}" y="140" transform="scale(.1)" fill="{message_text_color}" textLength="{message_width_scaled}">{message}</text>
-                            </g>
-                        </svg>"##,
-                        label_svg = label_svg,
-                        message_x = message_x,
-                        message_text_color = message_text_color,
-                        message_shadow_color = message_shadow_color,
-                        message_width_scaled = message_width_scaled,
-                        total_width = total_width,
-                        BADGE_HEIGHT = BADGE_HEIGHT,
-                        accessible_text = accessible_text,
-                        left_width = left_width,
-                        right_width = right_width,
-                        label_color = label_color,
-                        message_color = message_color,
-                        rx = rx,
-                        FONT_FAMILY = FONT_FAMILY,
-                        FONT_SIZE_SCALED = FONT_SIZE_SCALED,
-                    )
+                    BadgeSvgTemplateContext {
+                        total_width: total_width as i32,
+                        badge_height: BADGE_HEIGHT as i32,
+                        accessible_text: accessible_text.as_str(),
+                        left_width: left_width as i32,
+                        right_width: right_width as i32,
+                        label_color,
+                        message_color,
+                        rx,
+                        font_family: FONT_FAMILY,
+                        font_size_scaled: FONT_SIZE_SCALED as i32,
+                        has_label: has_label,
+                        label: label.unwrap_or(""),
+                        label_x: label_x,
+                        label_width_scaled: label_width_scaled as i32,
+                        label_text_color,
+                        label_shadow_color,
+                        message_x,
+                        message_shadow_color,
+                        message_text_color,
+                        message_width_scaled: message_width_scaled as i32,
+                        message,
+                    }
+                    .render()
+                    .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
                 BaseBadgeStyle::FlatSquare => {
                     // 计算 label/message 区域的前景色
@@ -480,7 +499,7 @@ fn render_badge(
                         message_width_scaled = message_width_scaled,
                         total_width = total_width,
                         BADGE_HEIGHT = BADGE_HEIGHT,
-                        accessible_text = accessible_text,
+                        accessible_text = accessible_text.as_str(),
                         left_width = left_width,
                         right_width = right_width,
                         label_color = label_color,
