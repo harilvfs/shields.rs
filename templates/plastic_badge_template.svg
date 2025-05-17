@@ -1,7 +1,9 @@
 {% let has_label = !label.is_empty() %}
+{% let has_one_link = !link.is_empty() && extra_link.is_empty() %}
+{% let has_two_link = !link.is_empty() && !extra_link.is_empty() %}
 <svg xmlns="http://www.w3.org/2000/svg" width="{{ total_width }}" height="18" role="img" aria-label="{{ accessible_text }}">
     <title>{{ accessible_text }}</title>
-    {% if has_link %}
+    {% if has_one_link %}
     <a target="_blank" href="{{ link }}">
     {% endif %}
     <linearGradient id="s" x2="0" y2="100%">
@@ -25,7 +27,7 @@
         {% endif %} 
         <text aria-hidden="true" x="{{ message_x }}" y="140" fill="{{ message_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ message_text_length }}">{{ message }}</text>     <text x="{{ message_x }}" y="130" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_text_length }}">{{ message }}</text>
     </g>
-    {% if has_link %}
+    {% if has_one_link %}
     </a>
     {% endif %}
 </svg>

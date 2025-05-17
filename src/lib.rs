@@ -27,8 +27,8 @@ struct FlatBadgeSvgTemplateContext<'a> {
     message_text_color: &'a str,
     message_width_scaled: i32,
 
-    has_link: bool,
     link: &'a str,
+    extra_link: &'a str,
 }
 /// flat-square SVG rendering template context
 #[derive(Template)]
@@ -54,8 +54,8 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
     message_text_color: &'a str,
     message_width_scaled: i32,
 
-    has_link: bool,
     link: &'a str,
+    extra_link: &'a str,
 }
 /// plastic SVG rendering template context
 #[derive(Template)]
@@ -79,8 +79,8 @@ struct PlasticBadgeSvgTemplateContext<'a> {
     label_color: &'a str,
     message_color: &'a str,
 
-    has_link: bool,
     link: &'a str,
+    extra_link: &'a str,
 }
 
 /// social SVG rendering template context
@@ -103,7 +103,9 @@ struct SocialBadgeSvgTemplateContext<'a> {
     message: &'a str,
     has_message: bool,
     has_link: bool,
+
     link: &'a str,
+    extra_link: &'a str,
 }
 
 pub mod measurer;
@@ -168,7 +170,7 @@ mod color_util {
     /// Standardizes color input, returning a string usable in SVG or None
     pub fn normalize_color(color: &str) -> Option<String> {
         static CACHE: Lazy<Mutex<LruCache<String, Option<String>>>> =
-            Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(256).unwrap())));
+            Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(512).unwrap())));
         let color = color.trim();
         if color.is_empty() {
             return None;
@@ -570,8 +572,8 @@ fn render_badge(
                     message_width_scaled: message_width_scaled as i32,
                     message,
 
-                    has_link,
                     link: link.unwrap_or(""),
+                    extra_link: extra_link.unwrap_or(""),
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
@@ -593,8 +595,8 @@ fn render_badge(
                     message_text_color,
                     message_width_scaled: message_width_scaled as i32,
                     message,
-                    has_link,
                     link: link.unwrap_or(""),
+                    extra_link: extra_link.unwrap_or(""),
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
@@ -615,8 +617,8 @@ fn render_badge(
                     message_shadow_color,
                     label_color,
                     message_color,
-                    has_link,
                     link: link.unwrap_or(""),
+                    extra_link: extra_link.unwrap_or(""),
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
@@ -684,6 +686,7 @@ fn render_badge(
                 label_rect_width,
                 has_link,
                 link: link.unwrap_or(""),
+                extra_link: extra_link.unwrap_or(""),
             }
             .render()
             .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))

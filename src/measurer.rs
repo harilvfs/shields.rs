@@ -47,23 +47,18 @@ impl CharWidthMeasurer {
             .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "JSON is not an array"))?;
         let mut data = Vec::with_capacity(arr.len());
         for item in arr {
-            let triple = item
-                .as_array()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Subitem is not an array"))?;
-            if triple.len() != 3 {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "Subitem length is not 3" ));
-            }
-            let lower = triple[0]
-                .as_u64()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "lower is not an integer"))?
-                as u32;
-            let upper = triple[1]
-                .as_u64()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "upper is not an integer"))?
-                as u32;
-            let width = triple[2]
-                .as_f64()
-                .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "width is not a float"))?;
+            let triple = item.as_array().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "Subitem is not an array")
+            })?;
+            let lower = triple[0].as_u64().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "lower is not an integer")
+            })? as u32;
+            let upper = triple[1].as_u64().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "upper is not an integer")
+            })? as u32;
+            let width = triple[2].as_f64().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "width is not a float")
+            })?;
             data.push((lower, upper, width));
         }
         Ok(CharWidthMeasurer::from_data(data))

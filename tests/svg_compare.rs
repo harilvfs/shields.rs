@@ -274,29 +274,43 @@ fn test_svg_compare() {
     let message_selections = vec!["message", "message with spaces", ""];
     let label_color_selections = vec![Some("blue"), Some("#4c1"), Some("#4c3232"), Some(""), None];
     let message_color_selections = vec!["#4c1", "#e05d44", "#4c3232", ""];
-    let link_selections = vec![
-        Some("https://example.com"),
-        Some("https://example.com/longer-link"),
-        Some(""),
-        None,
+    let links_selections = vec![
+        vec![None, None],
+        vec![Some(""), None],
+        vec![Some("https://example.com"), None],
+        vec![Some("https://example.com"), Some("https://example2.com")],
+        vec![Some("https://example.com"), Some("")],
     ];
-    let extra_link_selections = vec![None];
+    let style_selections = vec![
+        BadgeStyle::Base(BaseBadgeStyle::Flat),
+        BadgeStyle::Base(BaseBadgeStyle::Plastic),
+        BadgeStyle::Base(BaseBadgeStyle::FlatSquare),
+        BadgeStyle::Social,
+    ];
 
     let mut test_cases = vec![];
     for label in label_selections.iter() {
         for message in message_selections.iter() {
             for label_color in label_color_selections.iter() {
                 for message_color in message_color_selections.iter() {
-                    for link in link_selections.iter() {
-                        for extra_link in extra_link_selections.iter() {
+                    for links in links_selections.iter() {
+                        for style in style_selections.iter() {
+                            if links.len() < 2 {
+                                continue;
+                            }
+                            let link = links[0].clone();
+                            let extra_link = links[1].clone();
+                            if link.is_none() && extra_link.is_none() {
+                                continue;
+                            }
                             let params = BadgeParams {
-                                style: BadgeStyle::Base(BaseBadgeStyle::Flat),
+                                style: *style,
                                 label: *label,
                                 message,
                                 label_color: *label_color,
                                 message_color,
-                                link: *link,
-                                extra_link: *extra_link,
+                                link: links[0],
+                                extra_link: links[1],
                             };
                             test_cases.push(params);
                         }

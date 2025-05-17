@@ -1,7 +1,9 @@
 {% let has_label = !label.is_empty() %}
+{% let has_one_link = !link.is_empty() && extra_link.is_empty() %}
+{% let has_two_link = !link.is_empty() && !extra_link.is_empty() %}
 <svg xmlns="http://www.w3.org/2000/svg" width="{{ total_width }}" height="{{ badge_height }}" role="img" aria-label="{{ accessible_text }}">
     <title>{{ accessible_text }}</title>
-    {% if has_link %}
+    {% if has_one_link %}
     <a target="_blank" href="{{ link }}">
     {% endif %}
     <g shape-rendering="crispEdges">
@@ -14,7 +16,7 @@
         {% endif %}
         <text x="{{ message_x }}" y="140" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_width_scaled }}">{{ message }}</text>
     </g>
-    {% if has_link %}
+    {% if has_one_link %}
     </a>
     {% endif %}
 </svg>
