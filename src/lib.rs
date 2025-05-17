@@ -28,6 +28,9 @@ struct FlatBadgeSvgTemplateContext<'a> {
     message_shadow_color: &'a str,
     message_text_color: &'a str,
     message_width_scaled: i32,
+
+    has_link: bool,
+    link: &'a str,
 }
 /// flat-square SVG rendering template context
 #[derive(Template)]
@@ -54,6 +57,9 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
     message_x: f32,
     message_text_color: &'a str,
     message_width_scaled: i32,
+
+    has_link: bool,
+    link: &'a str,
 }
 /// plastic SVG rendering template context
 #[derive(Template)]
@@ -77,8 +83,12 @@ pub struct PlasticBadgeSvgTemplateContext<'a> {
     message_shadow_color: &'a str,
     label_color: &'a str,
     message_color: &'a str,
+
+    has_link: bool,
+    link: &'a str,
 }
 pub mod measurer;
+use color_util::to_svg_color;
 /// shields.rs —— Pure SVG badge generation library
 /// Contains only SVG generation logic, without web, IO, or API involvement
 use serde::Deserialize;
@@ -377,39 +387,32 @@ impl BadgeStyle {
     }
 }
 
-pub fn default_label_color() -> &'static str {
-    "#555"
-}
 pub fn default_message_color() -> &'static str {
     "#007ec6"
 }
 
 #[derive(Deserialize, Debug)]
-pub struct RenderBadgeParams<'a> {
+pub struct BadgeParams<'a> {
     #[serde(default)]
     pub style: BadgeStyle,
     pub label: Option<&'a str>,
     pub message: &'a str,
-    #[serde(default = "default_label_color")]
-    pub label_color: &'a str,
-    #[serde(default = "default_message_color")]
+    pub label_color: Option<&'a str>,
     pub message_color: &'a str,
+    pub link: Option<&'a str>,
+    pub extra_link: Option<&'a str>,
 }
 
 /// Public API: Generate SVG string
-pub fn render_badge_svg(params: &RenderBadgeParams) -> String {
-    // Color standardization processing, compatible with named colors, aliases, hex, CSS
-    use crate::color_util::to_svg_color;
-    let label_color =
-        to_svg_color(params.label_color).unwrap_or_else(|| default_label_color().to_string());
-    let message_color =
-        to_svg_color(params.message_color).unwrap_or_else(|| default_message_color().to_string());
+pub fn render_badge_svg(params: &BadgeParams) -> String {
     render_badge(
         params.label,
         params.message,
-        &label_color,
-        &message_color,
+        params.label_color,
+        params.message_color,
         params.style,
+        params.link,
+        params.extra_link,
     )
 }
 
@@ -431,30 +434,37 @@ fn create_accessible_text(label: Option<&str>, message: &str) -> String {
 fn render_badge(
     label: Option<&str>,
     message: &str,
-    label_color: &str,
+    label_color: Option<&str>,
     message_color: &str,
     style: BadgeStyle,
+    link: Option<&str>,
+    extra_link: Option<&str>,
 ) -> String {
+    let has_left_link = link.is_some();
+    let has_right_link = extra_link.is_some();
+    let has_link = has_left_link || has_right_link;
+    let has_label_color = label_color.is_some();
+    let label_color = to_svg_color(label_color.unwrap_or("#555")).unwrap_or("#555".to_string());
+    let message_color = to_svg_color(message_color).unwrap_or("#007ec6".to_string());
+    let label_color = label_color.as_str();
+    let message_color = message_color.as_str();
+
     match style {
         BadgeStyle::Base(base) => {
             let rx = match base {
                 BaseBadgeStyle::FlatSquare => 0,
                 _ => 3,
             };
-
             let logo_width = 0;
             let logo_padding = 0;
             let has_logo = false;
             let total_logo_width = logo_width + logo_padding;
             let accessible_text = create_accessible_text(label, message);
             // 如果 style 是 Plastic, 则空 label 字符串也视为无 label。
-            let has_label = match base {
-                BaseBadgeStyle::Plastic => label.map_or(false, |l| !l.is_empty()),
-                _ => label.is_some(),
-            };
+            let has_label = label.is_some() || has_label_color;
             let label_margin = total_logo_width + 1;
 
-            let label_width = if has_label {
+            let label_width = if has_label && label.is_some() {
                 preferred_width_of(label.unwrap(), Font::VerdanaNormal)
             } else {
                 0
@@ -465,7 +475,7 @@ fn render_badge(
             } else {
                 0
             };
-            if has_label {
+            if has_label && label.is_some() {
                 let label = label.unwrap();
                 if label.is_empty() {
                     left_width -= 1;
@@ -550,6 +560,9 @@ fn render_badge(
                         message_text_color,
                         message_width_scaled: message_width_scaled as i32,
                         message,
+
+                        has_link,
+                        link: link.unwrap_or(""),
                     }
                     .render()
                     .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
@@ -578,13 +591,17 @@ fn render_badge(
                         message_text_color,
                         message_width_scaled: message_width_scaled as i32,
                         message,
+                        has_link,
+                        link: link.unwrap_or(""),
                     }
                     .render()
                     .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
 
                 BaseBadgeStyle::Plastic => {
-                    let label_color = if has_label {
+                    // Plastic is different from Flat and FlatSquar
+                    let has_label = !label.unwrap_or("").is_empty();
+                    let label_color = if has_label || has_label_color {
                         label_color
                     } else {
                         message_color
@@ -596,6 +613,8 @@ fn render_badge(
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
+                    
+                    println!("has_link: {}", has_link);
 
                     let context = PlasticBadgeSvgTemplateContext {
                         total_width: total_width as i32,
@@ -615,6 +634,8 @@ fn render_badge(
                         message_shadow_color,
                         label_color,
                         message_color,
+                        has_link,
+                        link: link.unwrap_or(""),
                     };
                     context
                         .render()
@@ -642,12 +663,6 @@ fn render_badge(
 
             let message_rect_width = message_text_width + 2 * message_horizontal_padding;
             let has_message = !message.is_empty();
-
-            let left_link = "";
-            let right_link = "";
-            let has_left_link = !left_link.is_empty();
-            let has_right_link = !right_link.is_empty();
-            let has_link = has_left_link || has_right_link;
 
             let message_bubble_main_x = label_rect_width as f32 + horizontal_gutter as f32 + 0.5;
             let message_bubble_notch_x = label_rect_width + horizontal_gutter;
@@ -688,6 +703,8 @@ fn render_badge(
                 message_text_x,
                 message_text_length,
                 label_rect_width,
+                has_link,
+                link: link.unwrap_or(""),
             }
             .render()
             .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
@@ -712,7 +729,7 @@ impl Badge {
             style: BadgeStyle::default(),
             label: None,
             message: String::new(),
-            label_color: default_label_color().to_string(),
+            label_color: "#555".to_string(),
             message_color: default_message_color().to_string(),
         }
     }
@@ -749,12 +766,14 @@ impl Badge {
 
     /// Render SVG string
     pub fn render(&self) -> String {
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: self.style,
             label: self.label.as_deref(),
             message: &self.message,
-            label_color: &self.label_color,
+            label_color: Some(&self.label_color),
             message_color: &self.message_color,
+            link: None,
+            extra_link: None,
         };
         render_badge_svg(&params)
     }
@@ -766,12 +785,14 @@ mod tests {
     #[test]
     fn test_svg() {
         // Test SVG rendering
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("build"),
             message: "passing",
-            label_color: "#333",
+            label_color: Some("#333"),
             message_color: "#4c1",
+            link: None,
+            extra_link: None,
         };
         let svg = render_badge_svg(&params);
         assert!(!svg.is_empty(), "SVG rendering failed");
@@ -791,12 +812,14 @@ mod tests {
     }
     #[test]
     fn test_named_color() {
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("status"),
             message: "ok",
-            label_color: "brightgreen",
+            label_color: Some("brightgreen"),
             message_color: "blue",
+            link: None,
+            extra_link: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -811,12 +834,14 @@ mod tests {
 
     #[test]
     fn test_alias_color() {
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("status"),
             message: "ok",
-            label_color: "gray",
+            label_color: Some("gray"),
             message_color: "critical",
+            link: None,
+            extra_link: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -831,12 +856,14 @@ mod tests {
 
     #[test]
     fn test_hex_color() {
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("hex"),
             message: "ok",
-            label_color: "#4c1",
+            label_color: Some("#4c1"),
             message_color: "dfb317",
+            link: None,
+            extra_link: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -851,12 +878,14 @@ mod tests {
 
     #[test]
     fn test_css_color() {
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("css"),
             message: "ok",
-            label_color: "rgb(0,128,0)",
+            label_color: Some("rgb(0,128,0)"),
             message_color: "hsl(120,100%,25%)",
+            link: None,
+            extra_link: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -871,12 +900,14 @@ mod tests {
 
     #[test]
     fn test_invalid_color_fallback() {
-        let params = RenderBadgeParams {
+        let params = BadgeParams {
             style: BadgeStyle::flat_square(),
             label: Some("bad"),
             message: "ok",
-            label_color: "notacolor",
+            label_color: Some("notacolor"),
             message_color: "",
+            link: None,
+            extra_link: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -909,4 +940,6 @@ pub struct SocialBadgeSvgTemplateContext<'a> {
     message_text_length: u32,
     message: &'a str,
     has_message: bool,
+    has_link: bool,
+    link: &'a str,
 }

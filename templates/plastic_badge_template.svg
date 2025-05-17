@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="{{ total_width }}" height="18" role="img" aria-label="{{ accessible_text }}">
     <title>{{ accessible_text }}</title>
+    {% if has_link %}
+    <a target="_blank" href="{{ link }}">
+    {% endif %}
     <linearGradient id="s" x2="0" y2="100%">
         <stop offset="0" stop-color="#fff" stop-opacity=".7" />
         <stop offset=".1" stop-color="#aaa" stop-opacity=".1" />
@@ -14,6 +17,14 @@
         <rect x="{{ left_width }}" width="{{ right_width }}" height="18" fill="{{ message_color }}" />
         <rect width="{{ total_width }}" height="18" fill="url(#s)" />
     </g>
-    <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110"> {% if has_label %} <text aria-hidden="true" x="{{ label_x }}" y="140" fill="{{ label_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ label_text_length }}">{{ label }}</text>     <text x="{{ label_x }}" y="130" transform="scale(.1)" fill="{{ label_text_color }}" textLength="{{ label_text_length }}">{{ label }}</text> {% endif %} <text aria-hidden="true" x="{{ message_x }}" y="140" fill="{{ message_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ message_text_length }}">{{ message }}</text>     <text x="{{ message_x }}" y="130" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_text_length }}">{{ message }}</text>
+    <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110"> 
+        {% if has_label %} 
+        <text aria-hidden="true" x="{{ label_x }}" y="140" fill="{{ label_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ label_text_length }}">{{ label }}</text>   
+        <text x="{{ label_x }}" y="130" transform="scale(.1)" fill="{{ label_text_color }}" textLength="{{ label_text_length }}">{{ label }}</text>
+        {% endif %} 
+        <text aria-hidden="true" x="{{ message_x }}" y="140" fill="{{ message_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ message_text_length }}">{{ message }}</text>     <text x="{{ message_x }}" y="130" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_text_length }}">{{ message }}</text>
     </g>
+    {% if has_link %}
+    </a>
+    {% endif %}
 </svg>

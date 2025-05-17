@@ -1,8 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="{{ total_width }}" height="{{ badge_height }}" role="img" aria-label="{{ accessible_text }}">
     <title>{{ accessible_text }}</title>
+    {% if has_link %}
+    <a target="_blank" href="{{ link }}">
+    {% endif %}
     <g shape-rendering="crispEdges">
         <rect width="{{ left_width }}" height="20" fill="{{ label_color }}" />
         <rect x="{{ left_width }}" width="{{ right_width }}" height="20" fill="{{ message_color }}" />
     </g>
-    <g fill="#fff" text-anchor="middle" font-family="{{ font_family }}" text-rendering="geometricPrecision" font-size="{{ font_size_scaled }}"> {% if has_label %} <text x="{{ label_x }}" y="140" transform="scale(.1)" fill="{{ label_text_color }}" textLength="{{ label_width_scaled }}">{{ label }}</text> {% endif %} <text x="{{ message_x }}" y="140" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_width_scaled }}">{{ message }}</text></g>
+    <g fill="#fff" text-anchor="middle" font-family="{{ font_family }}" text-rendering="geometricPrecision" font-size="{{ font_size_scaled }}">
+        {% if has_label %}
+        <text x="{{ label_x }}" y="140" transform="scale(.1)" fill="{{ label_text_color }}" textLength="{{ label_width_scaled }}">{{ label }}</text> 
+        {% endif %}
+        <text x="{{ message_x }}" y="140" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_width_scaled }}">{{ message }}</text>
+    </g>
+    {% if has_link %}
+    </a>
+    {% endif %}
 </svg>
