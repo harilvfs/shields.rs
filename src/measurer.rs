@@ -51,7 +51,7 @@ impl CharWidthMeasurer {
                 .as_array()
                 .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "Subitem is not an array"))?;
             if triple.len() != 3 {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "Subitem length is not 3"));
+                return Err(io::Error::new(io::ErrorKind::InvalidData, "Subitem length is not 3" ));
             }
             let lower = triple[0]
                 .as_u64()

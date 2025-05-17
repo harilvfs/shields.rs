@@ -397,16 +397,19 @@ pub fn render_badge_svg(params: &RenderBadgeParams) -> String {
 }
 
 fn create_accessible_text(label: Option<&str>, message: &str) -> String {
-    let label_len = label.map_or(0, |l| l.len() + 2); // +2 for ": "
+    let use_label = match label {
+        Some(l) if !l.is_empty() => Some(l),
+        _ => None,
+    };
+    let label_len = use_label.map_or(0, |l| l.len() + 2); // +2 for ": "
     let mut buf = String::with_capacity(label_len + message.len());
-    if let Some(label) = label {
+    if let Some(label) = use_label {
         buf.push_str(label);
         buf.push_str(": ");
     }
     buf.push_str(message);
     buf
 }
-
 // --- General Badge Rendering Function ---
 fn render_badge(
     label: Option<&str>,
@@ -427,18 +430,30 @@ fn render_badge(
             let has_logo = false;
             let total_logo_width = logo_width + logo_padding;
             let accessible_text = create_accessible_text(label, message);
-            let has_label = label.is_some();
+            // 如果 style 是 Plastic, 则空 label 字符串也视为无 label。
+            let has_label = match base {
+                BaseBadgeStyle::Plastic => label.map_or(false, |l| !l.is_empty()),
+                _ => label.is_some(),
+            };
             let label_margin = total_logo_width + 1;
+
             let label_width = if has_label {
                 preferred_width_of(label.unwrap())
             } else {
                 0
             };
-            let left_width = if has_label {
-                label_width + 2 * HORIZONTAL_PADDING + total_logo_width
+
+            let mut left_width = if has_label {
+                (label_width + 2 * HORIZONTAL_PADDING + total_logo_width) as i32
             } else {
                 0
             };
+            if has_label {
+                let label = label.unwrap();
+                if label.is_empty() {
+                    left_width -= 1;
+                }
+            }
             let message_width = preferred_width_of(message);
             let mut message_margin: i32 =
                 left_width as i32 - if message.is_empty() { 0 } else { 1 };
@@ -458,7 +473,7 @@ fn render_badge(
                         0
                     };
             }
-            let total_width = left_width + right_width;
+            let total_width = left_width + right_width as i32;
 
             let message_x = 10.0
                 * (message_margin as f32
@@ -472,6 +487,7 @@ fn render_badge(
             let label_width_scaled = label_width * 10;
             match base {
                 BaseBadgeStyle::Flat => {
+                    let has_label = !label.unwrap_or("").is_empty();
                     // Calculate foreground and shadow colors for label/message area
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
@@ -522,6 +538,7 @@ fn render_badge(
                     .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
                 BaseBadgeStyle::FlatSquare => {
+                    let has_label = !label.unwrap_or("").is_empty();
                     // Calculate foreground and shadow colors for label/message area
                     let (label_text_color, _) = colors_for_background(label_color);
                     let (message_text_color, _) = colors_for_background(message_color);
@@ -550,18 +567,19 @@ fn render_badge(
                 }
 
                 BaseBadgeStyle::Plastic => {
-                    // Mysterious special logic, compatible with shield.io implementation
                     let label_color = if has_label {
                         label_color
                     } else {
                         message_color
                     };
 
+                    let accessible_text = create_accessible_text(label, message);
+
                     // Gradient colors can be customized as in the original implementation, or parameterized
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
-                    let has_label = label.map_or(false, |l| !l.is_empty());
+
                     let context = PlasticBadgeSvgTemplateContext {
                         total_width: total_width as i32,
                         left_width: left_width as i32,
