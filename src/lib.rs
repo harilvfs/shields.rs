@@ -47,6 +47,38 @@ const HORIZONTAL_PADDING: u32 = 5;
 const FONT_FAMILY: &str = "Verdana,Geneva,DejaVu Sans,sans-serif";
 const FONT_SIZE_SCALED: u32 = 110;
 
+/// 根据背景色动态计算前景色与阴影色（等价 JS colorsForBackground）
+///
+/// - 输入：hex 颜色字符串（支持 3/6 位，如 "#4c1"、"#007ec6"）
+/// - 算法：
+///   1. 解析 hex 为 RGB
+///   2. 计算亮度 brightness = (0.299*R + 0.587*G + 0.114*B) / 255
+///   3. 若亮度 ≤ 0.69，返回 ("#fff", "#010101")，否则 ("#333", "#ccc")
+pub fn colors_for_background(hex: &str) -> (&'static str, &'static str) {
+    // 去除前导 #
+    let hex = hex.trim_start_matches('#');
+    // 解析 RGB
+    let (r, g, b) = match hex.len() {
+        3 => (
+            u8::from_str_radix(&hex[0..1].repeat(2), 16).unwrap_or(0),
+            u8::from_str_radix(&hex[1..2].repeat(2), 16).unwrap_or(0),
+            u8::from_str_radix(&hex[2..3].repeat(2), 16).unwrap_or(0),
+        ),
+        6 => (
+            u8::from_str_radix(&hex[0..2], 16).unwrap_or(0),
+            u8::from_str_radix(&hex[2..4], 16).unwrap_or(0),
+            u8::from_str_radix(&hex[4..6], 16).unwrap_or(0),
+        ),
+        _ => (0, 0, 0), // 非法输入，返回黑色
+    };
+    // W3C 推荐亮度公式
+    let brightness = (0.299 * r as f32 + 0.587 * g as f32 + 0.114 * b as f32) / 255.0;
+    if brightness <= 0.69 {
+        ("#fff", "#010101")
+    } else {
+        ("#333", "#ccc")
+    }
+}
 pub(crate) fn preferred_width_of(text: &str) -> u32 {
     use lru::LruCache;
     use once_cell::sync::Lazy;
@@ -216,37 +248,18 @@ fn render_badge(
             let label_color = if has_label { label_color } else { "#e05d44" };
             let label_width_scaled = label_width * 10;
             match base {
-                BaseBadgeStyle::FlatSquare => {
-                    let label_svg = if has_label {
-                        let label = label.unwrap();
-                        format!(
-                            r##"<text x="{label_x}" y="140" transform="scale(.1)" fill="#fff" textLength="{label_width_scaled}">{label}</text>"##,
-                        )
-                    } else {
-                        String::new()
-                    };
-                    format!(
-                        r##"<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{BADGE_HEIGHT}" role="img"
-                                aria-label="{accessible_text}">
-                                <title>{accessible_text}</title>
-                                <g shape-rendering="crispEdges">
-                                    <rect width="{left_width}" height="20" fill="{label_color}" />
-                                    <rect x="{left_width}" width="{right_width}" height="20" fill="{message_color}" />
-                                </g>
-                                <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif"
-                                    text-rendering="geometricPrecision" font-size="110">
-                                    {label_svg}
-                                    <text x="{message_x}" y="140" transform="scale(.1)" fill="#fff" textLength="{message_width_scaled}">{message}</text>
-                                </g>
-                            </svg>"##
-                    )
-                }
                 BaseBadgeStyle::Flat => {
+                    // 计算 label/message 区域的前景色与阴影色
+                    let (label_text_color, label_shadow_color) = colors_for_background(label_color);
+                    let (message_text_color, message_shadow_color) =
+                        colors_for_background(message_color);
                     let label_svg = if has_label {
                         let label = label.unwrap();
                         format!(
-                            r##"<text aria-hidden="true" x="{label_x}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="{label_width_scaled}">{label}</text>
-                            <text x="{label_x}" y="140" transform="scale(.1)" fill="#fff" textLength="{label_width_scaled}">{label}</text>"##,
+                            r##"<text aria-hidden="true" x="{label_x}" y="150" fill="{label_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{label_width_scaled}">{label}</text>
+                            <text x="{label_x}" y="140" transform="scale(.1)" fill="{label_text_color}" textLength="{label_width_scaled}">{label}</text>"##,
+                            label_shadow_color = label_shadow_color,
+                            label_text_color = label_text_color,
                         )
                     } else {
                         String::new()
@@ -269,18 +282,77 @@ fn render_badge(
                             </g>
                             <g fill="#fff" text-anchor="middle" font-family="{FONT_FAMILY}" text-rendering="geometricPrecision" font-size="{FONT_SIZE_SCALED}">
                                 {label_svg}
-                                <text aria-hidden="true" x="{message_x}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="{message_width_scaled}">{message}</text>
-                                <text x="{message_x}" y="140" transform="scale(.1)" fill="#fff" textLength="{message_width_scaled}">{message}</text>
+                                <text aria-hidden="true" x="{message_x}" y="150" fill="{message_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{message_width_scaled}">{message}</text>
+                                <text x="{message_x}" y="140" transform="scale(.1)" fill="{message_text_color}" textLength="{message_width_scaled}">{message}</text>
                             </g>
                         </svg>"##,
+                        label_svg = label_svg,
+                        message_x = message_x,
+                        message_text_color = message_text_color,
+                        message_shadow_color = message_shadow_color,
+                        message_width_scaled = message_width_scaled,
+                        total_width = total_width,
+                        BADGE_HEIGHT = BADGE_HEIGHT,
+                        accessible_text = accessible_text,
+                        left_width = left_width,
+                        right_width = right_width,
+                        label_color = label_color,
+                        message_color = message_color,
+                        rx = rx,
+                        FONT_FAMILY = FONT_FAMILY,
+                        FONT_SIZE_SCALED = FONT_SIZE_SCALED,
                     )
                 }
+                BaseBadgeStyle::FlatSquare => {
+                    // 计算 label/message 区域的前景色
+                    let (label_text_color, _) = colors_for_background(label_color);
+                    let (message_text_color, _) = colors_for_background(message_color);
+                    let label_svg = if has_label {
+                        let label = label.unwrap();
+                        format!(
+                            r##"<text x="{label_x}" y="140" transform="scale(.1)" fill="{label_text_color}" textLength="{label_width_scaled}">{label}</text>"##,
+                            label_text_color = label_text_color,
+                        )
+                    } else {
+                        String::new()
+                    };
+                    format!(
+                        r##"<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{BADGE_HEIGHT}" role="img"
+                                aria-label="{accessible_text}">
+                                <title>{accessible_text}</title>
+                                <g shape-rendering="crispEdges">
+                                    <rect width="{left_width}" height="20" fill="{label_color}" />
+                                    <rect x="{left_width}" width="{right_width}" height="20" fill="{message_color}" />
+                                </g>
+                                <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif"
+                                    text-rendering="geometricPrecision" font-size="110">
+                                    {label_svg}
+                                    <text x="{message_x}" y="140" transform="scale(.1)" fill="{message_text_color}" textLength="{message_width_scaled}">{message}</text>
+                                </g>
+                            </svg>"##,
+                        label_svg = label_svg,
+                        message_x = message_x,
+                        message_text_color = message_text_color,
+                        message_width_scaled = message_width_scaled,
+                        total_width = total_width,
+                        BADGE_HEIGHT = BADGE_HEIGHT,
+                        accessible_text = accessible_text,
+                        left_width = left_width,
+                        right_width = right_width,
+                        label_color = label_color,
+                        message_color = message_color,
+                    )
+                }
+
                 BaseBadgeStyle::Plastic => {
                     let label_color = if has_label {
                         label_color
                     } else {
                         message_color
                     };
+                    let (label_text_color, label_shadow_color) = colors_for_background(label_color);
+                    let (message_text_color, message_shadow_color) =
+                        colors_for_background(message_color);
                     let label_is_some_and_not_empty = label.map_or(false, |l| !l.is_empty());
                     if label_is_some_and_not_empty {
                         // label 存在，保持原 SVG 结构
@@ -302,10 +374,10 @@ fn render_badge(
     <rect width="{total_width}" height="18" fill="url(#s)"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
-    <text aria-hidden="true" x="{label_text_x}" y="140" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="{label_text_length}">{label}</text>
-    <text x="{label_text_x}" y="130" transform="scale(.1)" fill="#fff" textLength="{label_text_length}">{label}</text>
-    <text aria-hidden="true" x="{message_text_x}" y="140" fill="#ccc" fill-opacity=".3" transform="scale(.1)" textLength="{message_text_length}">{message}</text>
-    <text x="{message_text_x}" y="130" transform="scale(.1)" fill="#333" textLength="{message_text_length}">{message}</text>
+      <text aria-hidden="true" x="{label_text_x}" y="140" fill="{label_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{label_text_length}">{label}</text>
+      <text x="{label_text_x}" y="130" transform="scale(.1)" fill="{label_text_color}" textLength="{label_text_length}">{label}</text>
+      <text aria-hidden="true" x="{message_text_x}" y="140" fill="{message_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{message_text_length}">{message}</text>
+      <text x="{message_text_x}" y="130" transform="scale(.1)" fill="{message_text_color}" textLength="{message_text_length}">{message}</text>
   </g>
 </svg>"##,
                             label = label.unwrap(),
@@ -314,7 +386,12 @@ fn render_badge(
                             label_text_x = label_x,
                             message_text_x = message_x,
                             label_text_length = label_width_scaled,
-                            message_text_length = message_width_scaled
+                            message_text_length = message_width_scaled,
+                            total_width = total_width,
+                            message_text_color = message_text_color,
+                            message_shadow_color = message_shadow_color,
+                            label_text_color = label_text_color,
+                            label_shadow_color = label_shadow_color,
                         )
                     } else {
                         // label 为空或 None，仅渲染 message 区域
@@ -336,8 +413,8 @@ fn render_badge(
     <rect width="{total_width}" height="18" fill="url(#s)"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
-    <text aria-hidden="true" x="{message_text_x}" y="140" fill="#ccc" fill-opacity=".3" transform="scale(.1)" textLength="{message_text_length}">{message}</text>
-    <text x="{message_text_x}" y="130" transform="scale(.1)" fill="#333" textLength="{message_text_length}">{message}</text>
+      <text aria-hidden="true" x="{message_text_x}" y="140" fill="{message_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{message_text_length}">{message}</text>
+      <text x="{message_text_x}" y="130" transform="scale(.1)" fill="{message_text_color}" textLength="{message_text_length}">{message}</text>
   </g>
 </svg>"##,
                             message_text_x = message_x,

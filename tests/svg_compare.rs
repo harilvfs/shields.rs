@@ -107,13 +107,164 @@ fn get_shields_svg_with_cache(params: &RenderBadgeParams, url: &str) -> String {
 }
 
 fn normalize_svg(svg: &str) -> String {
-    // 可根据需要扩展：去除生成时间、id 等无关属性
-    let mut normalized_svg = svg.replace("\n", "");
-    normalized_svg = normalized_svg.replace("\r", "");
-    normalized_svg = normalized_svg.replace(" ", "");
-    normalized_svg = normalized_svg.replace("'", "\"");
-    normalized_svg = normalized_svg.replace("xmlns=\"http://www.w3.org/2000/svg\"", "");
-    return normalized_svg;
+    use std::collections::BTreeMap;
+    use xmltree::{Element, XMLNode};
+
+    // 过滤和排序属性
+    fn filter_and_sort_attrs(attrs: &mut BTreeMap<String, String>) {
+        let geom_keys = [
+            "x", "y", "width", "height", "cx", "cy", "r", "rx", "ry", "d", "points", "x1", "y1",
+            "x2", "y2",
+        ];
+        let mut keep = BTreeMap::new();
+        // 先收集需要的属性
+        for (k, v) in attrs.iter() {
+            if k.starts_with("data-")
+                || k.contains(':') && (k.starts_with("inkscape:") || k.starts_with("sodipodi:"))
+            {
+                continue;
+            }
+            keep.insert(k.clone(), v.clone());
+        }
+        attrs.clear();
+        // 按优先级排序
+        let mut ordered = Vec::new();
+        for key in ["id", "class", "name"] {
+            if let Some(v) = keep.remove(key) {
+                ordered.push((key.to_string(), v));
+            }
+        }
+        for key in geom_keys {
+            if let Some(v) = keep.remove(key) {
+                ordered.push((key.to_string(), v));
+            }
+        }
+        if let Some(v) = keep.remove("style") {
+            ordered.push(("style".to_string(), v));
+        }
+        // 剩余按字典序
+        let mut rest: Vec<_> = keep.into_iter().collect();
+        rest.sort_by(|a, b| a.0.cmp(&b.0));
+        ordered.extend(rest);
+        for (k, v) in ordered {
+            attrs.insert(k, v);
+        }
+    }
+
+    // 合并多余空格
+    fn normalize_text(text: &str, in_text_tag: bool) -> String {
+        if in_text_tag {
+            // <text> 内保留有意义空格，合并多余空格
+            let mut s = String::new();
+            let mut last_space = false;
+            for c in text.chars() {
+                if c.is_whitespace() {
+                    if !last_space {
+                        s.push(' ');
+                        last_space = true;
+                    }
+                } else {
+                    s.push(c);
+                    last_space = false;
+                }
+            }
+            s
+        } else {
+            text.split_whitespace().collect::<Vec<_>>().join(" ")
+        }
+    }
+
+    // 递归格式化节点
+    fn format_element(elem: &Element, indent: usize, out: &mut String) {
+        let indent_str = "  ".repeat(indent);
+        out.push_str(&indent_str);
+        out.push('<');
+        out.push_str(&elem.name);
+
+        // 处理属性
+        let mut attrs: BTreeMap<String, String> = elem.attributes.clone().into_iter().collect();
+        filter_and_sort_attrs(&mut attrs);
+        for (k, v) in attrs {
+            out.push(' ');
+            out.push_str(&k);
+            out.push_str("=\"");
+            out.push_str(&v.replace('"', "&quot;"));
+            out.push('"');
+        }
+
+        // 处理子节点
+        let mut has_children = false;
+        let mut text_content = String::new();
+        for node in &elem.children {
+            match node {
+                XMLNode::Element(_) => {
+                    has_children = true;
+                }
+                XMLNode::Text(t) => {
+                    if t.trim().is_empty() {
+                        continue;
+                    }
+                    text_content.push_str(t);
+                }
+                _ => {}
+            }
+        }
+        let is_text_tag = elem.name == "text";
+        if elem.children.is_empty() {
+            out.push_str(" />\n");
+        } else if !has_children && !text_content.is_empty() {
+            // 只有文本
+            out.push('>');
+            out.push_str(&normalize_text(&text_content, is_text_tag));
+            out.push_str("</");
+            out.push_str(&elem.name);
+            out.push_str(">\n");
+        } else {
+            out.push_str(">\n");
+            for node in &elem.children {
+                match node {
+                    XMLNode::Element(e) => {
+                        format_element(e, indent + 1, out);
+                    }
+                    XMLNode::Text(t) => {
+                        let txt = normalize_text(t, is_text_tag);
+                        if !txt.is_empty() {
+                            out.push_str(&"  ".repeat(indent + 1));
+                            out.push_str(&txt);
+                            out.push('\n');
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            out.push_str(&indent_str);
+            out.push_str("</");
+            out.push_str(&elem.name);
+            out.push_str(">\n");
+        }
+    }
+
+    // 解析 SVG
+    let mut reader = svg.as_bytes();
+    let doc = match Element::parse(&mut reader) {
+        Ok(e) => e,
+        Err(_) => return svg.to_string(),
+    };
+
+    // 检查 XML 声明
+    let xml_decl = if svg.trim_start().starts_with("<?xml") {
+        Some("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+    } else {
+        None
+    };
+
+    // 格式化输出
+    let mut out = String::new();
+    if let Some(decl) = xml_decl {
+        out.push_str(decl);
+    }
+    format_element(&doc, 0, &mut out);
+    out
 }
 
 #[test]
@@ -181,6 +332,55 @@ fn test_svg_compare() {
             label_color: "#555",
             message_color: "#f7b93e",
         },
+        RenderBadgeParams {
+            style: BadgeStyle::plastic(),
+            label: None,
+            message: "1234",
+            label_color: "#000",
+            message_color: "#000",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "#000",
+            message_color: "#000",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::flat(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "#000",
+            message_color: "#000",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::plastic(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "#000",
+            message_color: "#000",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::flat(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "#fff",
+            message_color: "#fff",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "#fff",
+            message_color: "#fff",
+        },
+        RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("1234"),
+            message: "1234",
+            label_color: "blue",
+            message_color: "red",
+        },
     ];
 
     for params in test_cases {
@@ -189,6 +389,25 @@ fn test_svg_compare() {
         let local_svg_norm = normalize_svg(&local_svg);
         let shields_svg = get_shields_svg_with_cache(&params, &url);
         let shields_svg_norm = normalize_svg(&shields_svg);
+
+        // Save
+        let cache_dir = Path::new("tests/cache");
+        if !cache_dir.exists() {
+            fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
+        }
+
+        let file_name_local = format!("tests/svg_local.svg");
+        let file_name_shields = format!("tests/svg_shields.svg");
+        let mut file_local = fs::File::create(&file_name_local).expect("创建本地 SVG 文件失败");
+        file_local
+            .write_all(local_svg.as_bytes())
+            .expect("写入本地 SVG 文件失败");
+        let mut file_shields =
+            fs::File::create(&file_name_shields).expect("创建 shields SVG 文件失败");
+        file_shields
+            .write_all(shields_svg.as_bytes())
+            .expect("写入 shields SVG 文件失败");
+
         assert_eq!(
             local_svg_norm, shields_svg_norm,
             "SVG 不一致\n参数: {:?}\n本地 SVG:\n{}\nshields.io SVG:\n{}",
