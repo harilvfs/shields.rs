@@ -8,9 +8,12 @@ use serde::Deserialize;
 // 支持命名色、别名、hex、CSS 颜色输入的标准化与 SVG 输出
 
 mod color_util {
+    use lru::LruCache;
     use once_cell::sync::Lazy;
     use regex::Regex;
     use std::collections::HashMap;
+    use std::num::NonZeroUsize;
+    use std::sync::Mutex;
 
     // 命名色映射
     pub static NAMED_COLORS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
@@ -56,33 +59,61 @@ mod color_util {
 
     /// 标准化颜色输入，返回可用于SVG的字符串或None
     pub fn normalize_color(color: &str) -> Option<String> {
-        let color = color.trim().to_lowercase();
+        static CACHE: Lazy<Mutex<LruCache<String, Option<String>>>> =
+            Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(256).unwrap())));
+        let color = color.trim();
         if color.is_empty() {
             return None;
         }
-        if NAMED_COLORS.contains_key(color.as_str()) {
-            Some(color)
-        } else if let Some(&alias) = ALIASES.get(color.as_str()) {
+        let key = color.to_ascii_lowercase();
+        // 先查缓存
+        if let Some(cached) = {
+            let mut cache = CACHE.lock().unwrap();
+            cache.get(&key).cloned()
+        } {
+            return cached;
+        }
+        // 只在有大写字母时分配
+        let lower = color.to_ascii_lowercase();
+        let result = if NAMED_COLORS.contains_key(lower.as_str()) {
+            Some(lower.to_string())
+        } else if let Some(&alias) = ALIASES.get(lower.as_str()) {
             Some(alias.to_string())
-        } else if is_valid_hex(&color) {
-            Some(format!("#{}", color.trim_start_matches('#')))
-        } else if is_css_color(&color) {
-            Some(color)
+        } else if is_valid_hex(lower.as_str()) {
+            let hex = lower.trim_start_matches('#');
+            Some(format!("#{}", hex))
+        } else if is_css_color(lower.as_str()) {
+            Some(lower.to_string())
         } else {
             None
-        }
+        };
+        let mut cache = CACHE.lock().unwrap();
+        cache.put(key, result.clone());
+        result
     }
 
     /// 输出SVG可用颜色（hex字符串），优先命名色、别名，否则原样
     pub fn to_svg_color(color: &str) -> Option<String> {
+        static CACHE: Lazy<Mutex<LruCache<String, Option<String>>>> =
+            Lazy::new(|| Mutex::new(LruCache::new(NonZeroUsize::new(256).unwrap())));
+        let key = color.to_ascii_lowercase();
+        if let Some(cached) = {
+            let mut cache = CACHE.lock().unwrap();
+            cache.get(&key).cloned()
+        } {
+            return cached;
+        }
         let normalized = normalize_color(color)?;
-        if let Some(&hex) = NAMED_COLORS.get(normalized.as_str()) {
+        let result = if let Some(&hex) = NAMED_COLORS.get(normalized.as_str()) {
             Some(hex.to_string())
         } else if let Some(&alias) = ALIASES.get(normalized.as_str()) {
             NAMED_COLORS.get(alias).map(|&h| h.to_string())
         } else {
             Some(normalized)
-        }
+        };
+        let mut cache = CACHE.lock().unwrap();
+        cache.put(key, result.clone());
+        result
     }
 }
 /// 字体宽度计算 trait，主项目需实现并注入
@@ -141,9 +172,36 @@ pub fn colors_for_background(hex: &str) -> (&'static str, &'static str) {
     // 解析 RGB
     let (r, g, b) = match hex.len() {
         3 => (
-            u8::from_str_radix(&hex[0..1].repeat(2), 16).unwrap_or(0),
-            u8::from_str_radix(&hex[1..2].repeat(2), 16).unwrap_or(0),
-            u8::from_str_radix(&hex[2..3].repeat(2), 16).unwrap_or(0),
+            {
+                let c = hex.as_bytes()[0];
+                let v = match c {
+                    b'0'..=b'9' => c - b'0',
+                    b'a'..=b'f' => c - b'a' + 10,
+                    b'A'..=b'F' => c - b'A' + 10,
+                    _ => 0,
+                };
+                (v << 4) | v
+            },
+            {
+                let c = hex.as_bytes()[1];
+                let v = match c {
+                    b'0'..=b'9' => c - b'0',
+                    b'a'..=b'f' => c - b'a' + 10,
+                    b'A'..=b'F' => c - b'A' + 10,
+                    _ => 0,
+                };
+                (v << 4) | v
+            },
+            {
+                let c = hex.as_bytes()[2];
+                let v = match c {
+                    b'0'..=b'9' => c - b'0',
+                    b'a'..=b'f' => c - b'a' + 10,
+                    b'A'..=b'F' => c - b'A' + 10,
+                    _ => 0,
+                };
+                (v << 4) | v
+            },
         ),
         6 => (
             u8::from_str_radix(&hex[0..2], 16).unwrap_or(0),
