@@ -4,6 +4,87 @@ pub mod measurer;
 /// 只包含 SVG 生成逻辑，不涉及 web、IO、API
 use serde::Deserialize;
 
+// --- 颜色处理工具模块 ---
+// 支持命名色、别名、hex、CSS 颜色输入的标准化与 SVG 输出
+
+mod color_util {
+    use once_cell::sync::Lazy;
+    use regex::Regex;
+    use std::collections::HashMap;
+
+    // 命名色映射
+    pub static NAMED_COLORS: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+        HashMap::from([
+            ("brightgreen", "#4c1"),
+            ("green", "#97ca00"),
+            ("yellow", "#dfb317"),
+            ("yellowgreen", "#a4a61d"),
+            ("orange", "#fe7d37"),
+            ("red", "#e05d44"),
+            ("blue", "#007ec6"),
+            ("grey", "#555"),
+            ("lightgrey", "#9f9f9f"),
+        ])
+    });
+
+    // 别名映射
+    pub static ALIASES: Lazy<HashMap<&'static str, &'static str>> = Lazy::new(|| {
+        HashMap::from([
+            ("gray", "grey"),
+            ("lightgray", "lightgrey"),
+            ("critical", "red"),
+            ("important", "orange"),
+            ("success", "brightgreen"),
+            ("informational", "blue"),
+            ("inactive", "lightgrey"),
+        ])
+    });
+
+    // 3/6位hex校验
+    pub fn is_valid_hex(s: &str) -> bool {
+        let s = s.trim_start_matches('#');
+        let len = s.len();
+        (len == 3 || len == 6) && s.chars().all(|c| c.is_ascii_hexdigit())
+    }
+
+    // 简化版CSS颜色校验（支持 rgb(a)、hsl(a)、常见格式）
+    pub fn is_css_color(s: &str) -> bool {
+        static CSS_COLOR_RE: Lazy<Regex> =
+            Lazy::new(|| Regex::new(r"^(rgb|rgba|hsl|hsla)\s*\(").unwrap());
+        CSS_COLOR_RE.is_match(s.trim())
+    }
+
+    /// 标准化颜色输入，返回可用于SVG的字符串或None
+    pub fn normalize_color(color: &str) -> Option<String> {
+        let color = color.trim().to_lowercase();
+        if color.is_empty() {
+            return None;
+        }
+        if NAMED_COLORS.contains_key(color.as_str()) {
+            Some(color)
+        } else if let Some(&alias) = ALIASES.get(color.as_str()) {
+            Some(alias.to_string())
+        } else if is_valid_hex(&color) {
+            Some(format!("#{}", color.trim_start_matches('#')))
+        } else if is_css_color(&color) {
+            Some(color)
+        } else {
+            None
+        }
+    }
+
+    /// 输出SVG可用颜色（hex字符串），优先命名色、别名，否则原样
+    pub fn to_svg_color(color: &str) -> Option<String> {
+        let normalized = normalize_color(color)?;
+        if let Some(&hex) = NAMED_COLORS.get(normalized.as_str()) {
+            Some(hex.to_string())
+        } else if let Some(&alias) = ALIASES.get(normalized.as_str()) {
+            NAMED_COLORS.get(alias).map(|&h| h.to_string())
+        } else {
+            Some(normalized)
+        }
+    }
+}
 /// 字体宽度计算 trait，主项目需实现并注入
 pub trait FontMetrics {
     /// 支持 font-family 顺序 fallback
@@ -163,12 +244,17 @@ pub struct RenderBadgeParams<'a> {
 
 /// 公开 API：生成 SVG 字符串
 pub fn render_badge_svg(params: &RenderBadgeParams) -> String {
-    // 新增 variant 参数传递
+    // 颜色标准化处理，兼容命名色、别名、hex、CSS
+    use crate::color_util::to_svg_color;
+    let label_color =
+        to_svg_color(params.label_color).unwrap_or_else(|| default_label_color().to_string());
+    let message_color =
+        to_svg_color(params.message_color).unwrap_or_else(|| default_message_color().to_string());
     render_badge(
         params.label,
         params.message,
-        params.label_color,
-        params.message_color,
+        &label_color,
+        &message_color,
         params.style,
     )
 }
@@ -521,5 +607,89 @@ mod tests {
             .set_message_color("#4c1")
             .render();
         assert!(!svg.is_empty(), "SVG 渲染失败");
+    }
+    #[test]
+    fn test_named_color() {
+        let params = RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("status"),
+            message: "ok",
+            label_color: "brightgreen",
+            message_color: "blue",
+        };
+        let svg = render_badge_svg(&params);
+        assert!(
+            svg.contains("fill=\"#4c1\""),
+            "命名色 brightgreen 未正确映射"
+        );
+        assert!(svg.contains("fill=\"#007ec6\""), "命名色 blue 未正确映射");
+    }
+
+    #[test]
+    fn test_alias_color() {
+        let params = RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("status"),
+            message: "ok",
+            label_color: "gray",
+            message_color: "critical",
+        };
+        let svg = render_badge_svg(&params);
+        assert!(svg.contains("fill=\"#555\""), "别名 gray 未正确映射");
+        assert!(svg.contains("fill=\"#e05d44\""), "别名 critical 未正确映射");
+    }
+
+    #[test]
+    fn test_hex_color() {
+        let params = RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("hex"),
+            message: "ok",
+            label_color: "#4c1",
+            message_color: "dfb317",
+        };
+        let svg = render_badge_svg(&params);
+        assert!(svg.contains("fill=\"#4c1\""), "3位hex未正确处理");
+        assert!(svg.contains("fill=\"#dfb317\""), "6位hex未正确处理");
+    }
+
+    #[test]
+    fn test_css_color() {
+        let params = RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("css"),
+            message: "ok",
+            label_color: "rgb(0,128,0)",
+            message_color: "hsl(120,100%,25%)",
+        };
+        let svg = render_badge_svg(&params);
+        assert!(
+            svg.contains(r#"fill="rgb(0,128,0)""#),
+            "CSS rgb 颜色未正确处理"
+        );
+        assert!(
+            svg.contains(r#"fill="hsl(120,100%,25%)""#),
+            "CSS hsl 颜色未正确处理"
+        );
+    }
+
+    #[test]
+    fn test_invalid_color_fallback() {
+        let params = RenderBadgeParams {
+            style: BadgeStyle::flat_square(),
+            label: Some("bad"),
+            message: "ok",
+            label_color: "notacolor",
+            message_color: "",
+        };
+        let svg = render_badge_svg(&params);
+        assert!(
+            svg.contains("fill=\"#555\""),
+            "非法 label_color 未 fallback 到默认色"
+        );
+        assert!(
+            svg.contains("fill=\"#007ec6\""),
+            "空 message_color 未 fallback 到默认色"
+        );
     }
 }
