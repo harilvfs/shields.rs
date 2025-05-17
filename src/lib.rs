@@ -15,8 +15,6 @@ struct FlatBadgeSvgTemplateContext<'a> {
     font_family: &'a str,
     font_size_scaled: i32,
 
-    has_label: bool,
-
     label: &'a str,
     label_x: f32,
     label_width_scaled: i32,
@@ -46,8 +44,6 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
     font_family: &'a str,
     font_size_scaled: i32,
 
-    has_label: bool,
-
     label: &'a str,
     label_x: f32,
     label_width_scaled: i32,
@@ -64,13 +60,12 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
 /// plastic SVG rendering template context
 #[derive(Template)]
 #[template(path = "plastic_badge_template.svg", escape = "none")]
-pub struct PlasticBadgeSvgTemplateContext<'a> {
+struct PlasticBadgeSvgTemplateContext<'a> {
     total_width: i32,
     accessible_text: &'a str,
     left_width: i32,
     right_width: i32,
     // gradient
-    has_label: bool,
     label: &'a str,
     label_x: f32,
     label_text_length: i32,
@@ -87,6 +82,30 @@ pub struct PlasticBadgeSvgTemplateContext<'a> {
     has_link: bool,
     link: &'a str,
 }
+
+/// social SVG rendering template context
+#[derive(Template)]
+#[template(path = "social_badge_template.svg", escape = "none")]
+struct SocialBadgeSvgTemplateContext<'a> {
+    total_width: i32,
+    total_height: i32,
+    internal_height: u32,
+    accessible_text: &'a str,
+    label_rect_width: u32,
+    message_bubble_main_x: f32,
+    message_rect_width: u32,
+    message_bubble_notch_x: u32,
+    label_text_x: f32,
+    label_text_length: u32,
+    label: &'a str,
+    message_text_x: f32,
+    message_text_length: u32,
+    message: &'a str,
+    has_message: bool,
+    has_link: bool,
+    link: &'a str,
+}
+
 pub mod measurer;
 use color_util::to_svg_color;
 /// shields.rs —— Pure SVG badge generation library
@@ -440,15 +459,14 @@ fn render_badge(
     link: Option<&str>,
     extra_link: Option<&str>,
 ) -> String {
-    let has_left_link = link.is_some();
-    let has_right_link = extra_link.is_some();
+    let has_left_link = link.is_some() && !link.unwrap().is_empty();
+    let has_right_link = extra_link.is_some() && !extra_link.unwrap().is_empty();
     let has_link = has_left_link || has_right_link;
-    let has_label_color = label_color.is_some();
+    let has_label_color = label_color.is_some() && !label_color.unwrap().is_empty();
     let label_color = to_svg_color(label_color.unwrap_or("#555")).unwrap_or("#555".to_string());
     let message_color = to_svg_color(message_color).unwrap_or("#007ec6".to_string());
     let label_color = label_color.as_str();
     let message_color = message_color.as_str();
-
     match style {
         BadgeStyle::Base(base) => {
             let rx = match base {
@@ -461,7 +479,8 @@ fn render_badge(
             let total_logo_width = logo_width + logo_padding;
             let accessible_text = create_accessible_text(label, message);
             // 如果 style 是 Plastic, 则空 label 字符串也视为无 label。
-            let has_label = label.is_some() || has_label_color;
+            let has_label_content = label.is_some() && !label.unwrap().is_empty();
+            let has_label = has_label_content || has_label_color;
             let label_margin = total_logo_width + 1;
 
             let label_width = if has_label && label.is_some() {
@@ -512,24 +531,20 @@ fn render_badge(
                 * (label_margin as f32 + (0.5 * label_width as f32) + HORIZONTAL_PADDING as f32);
             let label_color = if has_label { label_color } else { "#e05d44" };
             let label_width_scaled = label_width * 10;
+
+            let label_color = if has_label || has_label_color {
+                label_color
+            } else {
+                message_color
+            };
+
             match base {
                 BaseBadgeStyle::Flat => {
-                    let has_label = !label.unwrap_or("").is_empty();
+                    // let has_label = !label.unwrap_or("").is_empty();
                     // Calculate foreground and shadow colors for label/message area
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
-                    let _label_svg = if has_label {
-                        let label = label.unwrap();
-                        format!(
-                            r##"<text aria-hidden="true" x="{label_x}" y="150" fill="{label_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{label_width_scaled}">{label}</text>
-                            <text x="{label_x}" y="140" transform="scale(.1)" fill="{label_text_color}" textLength="{label_width_scaled}">{label}</text>"##,
-                            label_shadow_color = label_shadow_color,
-                            label_text_color = label_text_color,
-                        )
-                    } else {
-                        String::new()
-                    };
 
                     FlatBadgeSvgTemplateContext {
                         font_family: FONT_FAMILY,
@@ -546,8 +561,6 @@ fn render_badge(
                         rx,
 
                         font_size_scaled: FONT_SIZE_SCALED as i32,
-
-                        has_label: has_label,
 
                         label: label.unwrap_or(""),
                         label_x: label_x,
@@ -568,7 +581,6 @@ fn render_badge(
                     .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
                 BaseBadgeStyle::FlatSquare => {
-                    let has_label = !label.unwrap_or("").is_empty();
                     // Calculate foreground and shadow colors for label/message area
                     let (label_text_color, _) = colors_for_background(label_color);
                     let (message_text_color, _) = colors_for_background(message_color);
@@ -582,7 +594,6 @@ fn render_badge(
                         label_color,
                         message_color,
                         font_size_scaled: FONT_SIZE_SCALED as i32,
-                        has_label,
                         label: label.unwrap_or(""),
                         label_x,
                         label_width_scaled: label_width_scaled as i32,
@@ -613,7 +624,7 @@ fn render_badge(
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
-                    
+
                     println!("has_link: {}", has_link);
 
                     let context = PlasticBadgeSvgTemplateContext {
@@ -621,7 +632,6 @@ fn render_badge(
                         left_width: left_width as i32,
                         right_width: right_width as i32,
                         accessible_text: accessible_text.as_str(),
-                        has_label,
                         label: label.unwrap_or(""),
                         label_x,
                         label_text_length: label_width_scaled as i32,
@@ -919,27 +929,4 @@ mod tests {
             "Empty message_color did not fallback to default color"
         );
     }
-}
-
-/// social SVG rendering template context
-#[derive(Template)]
-#[template(path = "social_badge_template.svg", escape = "none")]
-pub struct SocialBadgeSvgTemplateContext<'a> {
-    total_width: i32,
-    total_height: i32,
-    internal_height: u32,
-    accessible_text: &'a str,
-    label_rect_width: u32,
-    message_bubble_main_x: f32,
-    message_rect_width: u32,
-    message_bubble_notch_x: u32,
-    label_text_x: f32,
-    label_text_length: u32,
-    label: &'a str,
-    message_text_x: f32,
-    message_text_length: u32,
-    message: &'a str,
-    has_message: bool,
-    has_link: bool,
-    link: &'a str,
 }

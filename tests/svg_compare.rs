@@ -270,284 +270,41 @@ fn normalize_svg(svg: &str) -> String {
 
 #[test]
 fn test_svg_compare() {
-    let test_cases = vec![
-        // 常规
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: Some("build"),
-            message: "passing",
-            label_color: Some("#555"),
-            message_color: "#4c1",
-            link: None,
-            extra_link: None,
-        },
-        // 边界：空 label
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: None,
-            message: "nonasdasdas31dde",
-            label_color: Some("#555"),
-            message_color: "#e05d44",
-            link: None,
-            extra_link: None,
-        },
-        // 边界：空 label
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: None,
-            message: "nonasdasdas31dde",
-            label_color: Some("#555"),
-            message_color: "#e05d44",
-            link: None,
-            extra_link: None,
-        },
-        // 边界：长 message
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some("coverage"),
-            message: "100 coverage achieved",
-            label_color: Some("#007ec6"),
-            message_color: "#007ec6",
-            link: None,
-            extra_link: None,
-        },
-        // // 特殊字符
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: Some("build"),
-            message: "✓",
-            label_color: Some("#555"),
-            message_color: "#44cc11",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some("build"),
-            message: "✓",
-            label_color: Some("#555"),
-            message_color: "#44cc11",
-            link: None,
-            extra_link: None,
-        },
-        // 不同 style
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: Some("stars"),
-            message: "1234",
-            label_color: Some("#555"),
-            message_color: "#f7b93e",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: None,
-            message: "1234",
-            label_color: Some("#555"),
-            message_color: "#f7b93e",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: None,
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: Some("1"),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some("1"),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: Some(""),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some(""),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: Some(""),
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: None,
-            message: "1234",
-            label_color: Some("#000"),
-            message_color: "#000",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("#fff"),
-            message_color: "#fff",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("#fff"),
-            message_color: "#fff",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::social(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::social(),
-            label: Some("1234"),
-            message: "1234",
-            label_color: Some("#fff"),
-            message_color: "#fff",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::social(),
-            label: Some(""),
-            message: "1234",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::social(),
-            label: None,
-            message: "1234",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::social(),
-            label: None,
-            message: "",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: None,
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat(),
-            label: None,
-            message: "213",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: Some("https://jannchie.com"),
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::flat_square(),
-            label: None,
-            message: "213",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: Some("https://jannchie.com"),
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::plastic(),
-            label: None,
-            message: "213",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: Some("https://jannchie.com"),
-            extra_link: None,
-        },
-        BadgeParams {
-            style: BadgeStyle::social(),
-            label: None,
-            message: "213",
-            label_color: Some("blue"),
-            message_color: "red",
-            link: Some("https://jannchie.com"),
-            extra_link: None,
-        },
+    let label_selections = vec![Some("label"), Some("label with spaces"), Some(""), None];
+    let message_selections = vec!["message", "message with spaces", ""];
+    let label_color_selections = vec![Some("blue"), Some("#4c1"), Some("#4c3232"), Some(""), None];
+    let message_color_selections = vec!["#4c1", "#e05d44", "#4c3232", ""];
+    let link_selections = vec![
+        Some("https://example.com"),
+        Some("https://example.com/longer-link"),
+        Some(""),
+        None,
     ];
+    let extra_link_selections = vec![None];
+
+    let mut test_cases = vec![];
+    for label in label_selections.iter() {
+        for message in message_selections.iter() {
+            for label_color in label_color_selections.iter() {
+                for message_color in message_color_selections.iter() {
+                    for link in link_selections.iter() {
+                        for extra_link in extra_link_selections.iter() {
+                            let params = BadgeParams {
+                                style: BadgeStyle::Base(BaseBadgeStyle::Flat),
+                                label: *label,
+                                message,
+                                label_color: *label_color,
+                                message_color,
+                                link: *link,
+                                extra_link: *extra_link,
+                            };
+                            test_cases.push(params);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     for params in test_cases {
         println!("测试参数: {:?}", params);

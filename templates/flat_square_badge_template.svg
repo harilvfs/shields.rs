@@ -1,3 +1,4 @@
+{% let has_label = !label.is_empty() %}
 <svg xmlns="http://www.w3.org/2000/svg" width="{{ total_width }}" height="{{ badge_height }}" role="img" aria-label="{{ accessible_text }}">
     <title>{{ accessible_text }}</title>
     {% if has_link %}
