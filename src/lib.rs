@@ -29,7 +29,62 @@ struct FlatBadgeSvgTemplateContext<'a> {
     message_text_color: &'a str,
     message_width_scaled: i32,
 }
-// 声明 measurer 模块为公有，确保 crate::measurer 可用
+/// flat-square SVG 渲染模板上下文
+#[derive(Template)]
+#[template(path = "flat_square_badge_template.svg", escape = "none")]
+struct FlatSquareBadgeSvgTemplateContext<'a> {
+    total_width: i32,
+    badge_height: i32,
+    accessible_text: &'a str,
+    left_width: i32,
+    right_width: i32,
+    label_color: &'a str,
+    message_color: &'a str,
+    font_family: &'a str,
+    font_size_scaled: i32,
+
+    has_label: bool,
+
+    label: &'a str,
+    label_x: f32,
+    label_width_scaled: i32,
+    label_text_color: &'a str,
+
+    message: &'a str,
+    message_x: f32,
+    message_text_color: &'a str,
+    message_width_scaled: i32,
+}
+/// plastic SVG 渲染模板上下文
+#[derive(Template)]
+#[template(path = "plastic_badge_template.svg", escape = "none")]
+pub struct PlasticBadgeSvgTemplateContext<'a> {
+    total_width: i32,
+    badge_height: i32,
+    accessible_text: &'a str,
+    left_width: i32,
+    right_width: i32,
+    // 渐变色
+    gradient_start: &'a str,
+    gradient_end: &'a str,
+    // 圆角
+    rx: i32,
+    has_label: bool,
+    label: &'a str,
+    label_x: f32,
+    label_text_length: i32,
+    label_text_color: &'a str,
+    label_shadow_color: &'a str,
+    message: &'a str,
+    message_x: f32,
+    message_text_length: i32,
+    message_text_color: &'a str,
+    message_shadow_color: &'a str,
+    label_color: &'a str,
+    message_color: &'a str,
+    font_family: &'a str,
+    font_size_scaled: i32,
+}
 pub mod measurer;
 /// shields.rs —— 纯 SVG 徽章生成库
 /// 只包含 SVG 生成逻辑，不涉及 web、IO、API
@@ -474,123 +529,76 @@ fn render_badge(
                     .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
                 BaseBadgeStyle::FlatSquare => {
-                    // 计算 label/message 区域的前景色
+                    // 计算 label/message 区域的前景色与阴影色
                     let (label_text_color, _) = colors_for_background(label_color);
                     let (message_text_color, _) = colors_for_background(message_color);
-                    let label_svg = if has_label {
-                        let label = label.unwrap();
-                        format!(
-                            r##"<text x="{label_x}" y="140" transform="scale(.1)" fill="{label_text_color}" textLength="{label_width_scaled}">{label}</text>"##,
-                            label_text_color = label_text_color,
-                        )
-                    } else {
-                        String::new()
-                    };
-                    format!(
-                        r##"<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="{BADGE_HEIGHT}" role="img"
-                                aria-label="{accessible_text}">
-                                <title>{accessible_text}</title>
-                                <g shape-rendering="crispEdges">
-                                    <rect width="{left_width}" height="20" fill="{label_color}" />
-                                    <rect x="{left_width}" width="{right_width}" height="20" fill="{message_color}" />
-                                </g>
-                                <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif"
-                                    text-rendering="geometricPrecision" font-size="110">
-                                    {label_svg}
-                                    <text x="{message_x}" y="140" transform="scale(.1)" fill="{message_text_color}" textLength="{message_width_scaled}">{message}</text>
-                                </g>
-                            </svg>"##,
-                        label_svg = label_svg,
-                        message_x = message_x,
-                        message_text_color = message_text_color,
-                        message_width_scaled = message_width_scaled,
-                        total_width = total_width,
-                        BADGE_HEIGHT = BADGE_HEIGHT,
-                        accessible_text = accessible_text.as_str(),
-                        left_width = left_width,
-                        right_width = right_width,
-                        label_color = label_color,
-                        message_color = message_color,
-                    )
+                    FlatSquareBadgeSvgTemplateContext {
+                        font_family: FONT_FAMILY,
+                        accessible_text: accessible_text.as_str(),
+                        badge_height: BADGE_HEIGHT as i32,
+                        left_width: left_width as i32,
+                        right_width: right_width as i32,
+                        total_width: total_width as i32,
+                        label_color,
+                        message_color,
+                        font_size_scaled: FONT_SIZE_SCALED as i32,
+                        has_label,
+                        label: label.unwrap_or(""),
+                        label_x,
+                        label_width_scaled: label_width_scaled as i32,
+                        label_text_color,
+                        message_x,
+                        message_text_color,
+                        message_width_scaled: message_width_scaled as i32,
+                        message,
+                    }
+                    .render()
+                    .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
 
                 BaseBadgeStyle::Plastic => {
+                    // 谜之特殊逻辑，兼容 shield.io 的实现
                     let label_color = if has_label {
                         label_color
                     } else {
                         message_color
                     };
+
+                    // 渐变色可根据原实现自定义，也可参数化
+                    let (gradient_start, gradient_end) = ("#fff", "#000");
+                    let rx = 4;
                     let (label_text_color, label_shadow_color) = colors_for_background(label_color);
                     let (message_text_color, message_shadow_color) =
                         colors_for_background(message_color);
-                    let label_is_some_and_not_empty = label.map_or(false, |l| !l.is_empty());
-                    if label_is_some_and_not_empty {
-                        // label 存在，保持原 SVG 结构
-                        format!(
-                            r##"<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="18" role="img" aria-label="{label}: {message}">
-  <title>{label}: {message}</title>
-  <linearGradient id="s" x2="0" y2="100%">
-    <stop offset="0" stop-color="#fff" stop-opacity=".7"/>
-    <stop offset=".1" stop-color="#aaa" stop-opacity=".1"/>
-    <stop offset=".9" stop-color="#000" stop-opacity=".3"/>
-    <stop offset="1" stop-color="#000" stop-opacity=".5"/>
-  </linearGradient>
-  <clipPath id="r">
-    <rect width="{total_width}" height="18" rx="4" fill="#fff"/>
-  </clipPath>
-  <g clip-path="url(#r)">
-    <rect width="{label_width}" height="18" fill="{label_color}"/>
-    <rect x="{label_width}" width="{message_width}" height="18" fill="{message_color}"/>
-    <rect width="{total_width}" height="18" fill="url(#s)"/>
-  </g>
-  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
-      <text aria-hidden="true" x="{label_text_x}" y="140" fill="{label_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{label_text_length}">{label}</text>
-      <text x="{label_text_x}" y="130" transform="scale(.1)" fill="{label_text_color}" textLength="{label_text_length}">{label}</text>
-      <text aria-hidden="true" x="{message_text_x}" y="140" fill="{message_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{message_text_length}">{message}</text>
-      <text x="{message_text_x}" y="130" transform="scale(.1)" fill="{message_text_color}" textLength="{message_text_length}">{message}</text>
-  </g>
-</svg>"##,
-                            label = label.unwrap(),
-                            label_width = left_width,
-                            message_width = right_width,
-                            label_text_x = label_x,
-                            message_text_x = message_x,
-                            label_text_length = label_width_scaled,
-                            message_text_length = message_width_scaled,
-                            total_width = total_width,
-                            message_text_color = message_text_color,
-                            message_shadow_color = message_shadow_color,
-                            label_text_color = label_text_color,
-                            label_shadow_color = label_shadow_color,
-                        )
-                    } else {
-                        // label 为空或 None，仅渲染 message 区域
-                        format!(
-                            r##"<svg xmlns="http://www.w3.org/2000/svg" width="{total_width}" height="18" role="img" aria-label="{message}">
-  <title>{message}</title>
-  <linearGradient id="s" x2="0" y2="100%">
-    <stop offset="0" stop-color="#fff" stop-opacity=".7"/>
-    <stop offset=".1" stop-color="#aaa" stop-opacity=".1"/>
-    <stop offset=".9" stop-color="#000" stop-opacity=".3"/>
-    <stop offset="1" stop-color="#000" stop-opacity=".5"/>
-  </linearGradient>
-  <clipPath id="r">
-    <rect width="{total_width}" height="18" rx="4" fill="#fff"/>
-  </clipPath>
-  <g clip-path="url(#r)">
-    <rect width="{label_width}" height="18" fill="{label_color}"/>
-    <rect x="0" width="{total_width}" height="18" fill="{message_color}"/>
-    <rect width="{total_width}" height="18" fill="url(#s)"/>
-  </g>
-  <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
-      <text aria-hidden="true" x="{message_text_x}" y="140" fill="{message_shadow_color}" fill-opacity=".3" transform="scale(.1)" textLength="{message_text_length}">{message}</text>
-      <text x="{message_text_x}" y="130" transform="scale(.1)" fill="{message_text_color}" textLength="{message_text_length}">{message}</text>
-  </g>
-</svg>"##,
-                            message_text_x = message_x,
-                            message_text_length = message_width_scaled
-                        )
-                    }
+                    let has_label = label.map_or(false, |l| !l.is_empty());
+                    let context = PlasticBadgeSvgTemplateContext {
+                        total_width: total_width as i32,
+                        badge_height: BADGE_HEIGHT as i32,
+                        left_width: left_width as i32,
+                        right_width: right_width as i32,
+                        accessible_text: accessible_text.as_str(),
+                        gradient_start,
+                        gradient_end,
+                        rx,
+                        has_label,
+                        label: label.unwrap_or(""),
+                        label_x,
+                        label_text_length: label_width_scaled as i32,
+                        label_text_color,
+                        label_shadow_color,
+                        message,
+                        message_x,
+                        message_text_length: message_width_scaled as i32,
+                        message_text_color,
+                        message_shadow_color,
+                        label_color,
+                        message_color,
+                        font_family: FONT_FAMILY,
+                        font_size_scaled: FONT_SIZE_SCALED as i32,
+                    };
+                    context
+                        .render()
+                        .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
                 }
             }
         }
