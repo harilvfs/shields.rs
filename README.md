@@ -1,15 +1,10 @@
-# shields
+# shields.rs
 
-A high-performance badge rendering engine written in Rust, supporting SVG output and font parsing. This project is designed for developers and services that require fast, customizable, and reliable badge generation, similar to [shields.io](https://shields.io/), but with a focus on performance and extensibility.
+A high-performance badge rendering engine written in Rust, supporting SVG output and font parsing. This project is designed for developers and services that require fast, customizable, and reliable badge generation.
 
-## Features
+**🎯 Pixel-Perfect Consistency with shields.io**
 
-- ⚡ **High Performance**: Built with Rust for maximum speed and efficiency.
-- 🖼️ **SVG Output**: Generates crisp, standards-compliant SVG badges.
-- 🔤 **Font Parsing**: Supports custom font rendering using TTF parsing.
-- 🧠 **LRU Caching**: Efficient in-memory caching for repeated badge requests.
-- 🛠️ **Extensible API**: Easy to integrate and extend for various use cases.
-- 🧪 **Comprehensive Testing**: Includes tests for rendering accuracy and performance.
+Our goal is to achieve pixel-perfect, 100% identical rendering results to [shields.io](https://shields.io/). We utilize precisely the same text length calculation data to ensure full consistency, while delivering significantly improved efficiency.
 
 ## Installation
 
@@ -38,23 +33,7 @@ cargo run --release
 
 ## Usage Example
 
-Here is a basic example of how to use the shields library in your Rust project:
-
-```rust
-use shields::BadgeRenderer;
-
-fn main() {
-    let renderer = BadgeRenderer::new();
-    let svg = renderer.render("build", "passing", "#4c1");
-    std::fs::write("badge.svg", svg).unwrap();
-}
-```
-
-This will generate a `badge.svg` file with a "build: passing" badge.
-
-### 链式调用示例
-
-你可以通过链式调用的方式快速构建和渲染徽章：
+The library provides a chainable API for customizing badges. You can set the label, message, color, and other properties using method chaining:
 
 ```rust
 use shields::Badge;

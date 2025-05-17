@@ -1,7 +1,6 @@
 use shields::{BadgeStyle, BaseBadgeStyle, RenderBadgeParams, render_badge_svg};
 
 use pretty_assertions::assert_eq;
-use sha2::{Digest, Sha256};
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
@@ -31,21 +30,39 @@ fn shields_io_url(params: &RenderBadgeParams) -> String {
     )
 }
 
-/// 生成唯一缓存文件名（SHA256 hash）
-fn cache_file_name(url: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(url.as_bytes());
-    let hash = hasher.finalize();
-    format!("{:x}.svg", hash)
+/**
+ * 生成唯一缓存文件名（基于参数文本，避免非法字符）
+ */
+fn cache_file_name_from_params(params: &RenderBadgeParams) -> String {
+    let style = match params.style {
+        BadgeStyle::Base(BaseBadgeStyle::Flat) => "flat",
+        BadgeStyle::Base(BaseBadgeStyle::Plastic) => "plastic",
+        BadgeStyle::Base(BaseBadgeStyle::FlatSquare) => "flat-square",
+        BadgeStyle::Social => "social",
+    };
+    let label = params.label.unwrap_or("");
+    let message = params.message;
+    let label_color = params.label_color;
+    let message_color = params.message_color;
+    // 拼接参数并做 URL 编码，避免非法文件名
+    let file_name = format!(
+        "label={}&message={}&label_color={}&message_color={}&style={}.svg",
+        urlencoding::encode(label),
+        urlencoding::encode(message),
+        urlencoding::encode(label_color),
+        urlencoding::encode(message_color),
+        style
+    );
+    file_name
 }
 
 /// 获取 shields.io SVG，带本地缓存
-fn get_shields_svg_with_cache(url: &str) -> String {
+fn get_shields_svg_with_cache(params: &RenderBadgeParams, url: &str) -> String {
     let cache_dir = Path::new("tests/cache");
     if !cache_dir.exists() {
         fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
     }
-    let file_name = cache_file_name(url);
+    let file_name = cache_file_name_from_params(params);
     let cache_path = cache_dir.join(file_name);
 
     // 优先读取缓存
@@ -170,13 +187,8 @@ fn test_svg_compare() {
         let local_svg = render_badge_svg(&params);
         let url = shields_io_url(&params);
         let local_svg_norm = normalize_svg(&local_svg);
-        let shields_svg = get_shields_svg_with_cache(&url);
+        let shields_svg = get_shields_svg_with_cache(&params, &url);
         let shields_svg_norm = normalize_svg(&shields_svg);
-        
-
-        // 保存本地和 shields.io SVG 结果，供人工比对
-        std::fs::write("tests/svg_local.svg", &local_svg).ok();
-        std::fs::write("tests/svg_shieldsio.svg", &shields_svg).ok();
         assert_eq!(
             local_svg_norm, shields_svg_norm,
             "SVG 不一致\n参数: {:?}\n本地 SVG:\n{}\nshields.io SVG:\n{}",
