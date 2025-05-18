@@ -1,4 +1,8 @@
 use askama::{Template, filters::capitalize};
+pub mod builder;
+pub mod measurer;
+use color_util::to_svg_color;
+use serde::Deserialize;
 
 /// SVG rendering template context, fields must correspond to variables in badge_svg_template_askama.svg
 #[derive(Template)]
@@ -105,12 +109,6 @@ struct SocialBadgeSvgTemplateContext<'a> {
     link: &'a str,
     extra_link: &'a str,
 }
-
-pub mod measurer;
-use color_util::to_svg_color;
-/// shields.rs —— Pure SVG badge generation library
-/// Contains only SVG generation logic, without web, IO, or API involvement
-use serde::Deserialize;
 
 // --- Color processing utility module ---
 // Supports standardization and SVG output of named colors, aliases, hex, and CSS color inputs
@@ -691,82 +689,6 @@ fn render_badge(
     }
 }
 
-// --- Badge struct and chainable API implementation ---
-#[derive(Debug, Clone)]
-pub struct Badge {
-    style: BadgeStyle,
-    label: Option<String>,
-    message: String,
-    label_color: String,
-    message_color: String,
-    link: Option<String>,
-    extra_link: Option<String>,
-}
-
-impl Badge {
-    /// Create default Badge instance
-    pub fn new() -> Self {
-        Badge {
-            style: BadgeStyle::default(),
-            label: None,
-            message: String::new(),
-            label_color: default_label_color().to_string(),
-            message_color: default_message_color().to_string(),
-            link: None,
-            extra_link: None,
-        }
-    }
-
-    /// Set label
-    pub fn set_label(mut self, label: impl Into<String>) -> Self {
-        self.label = Some(label.into());
-        self
-    }
-
-    /// Set message
-    pub fn set_message(mut self, message: impl Into<String>) -> Self {
-        self.message = message.into();
-        self
-    }
-
-    /// Set style
-    pub fn set_style(mut self, style: BadgeStyle) -> Self {
-        self.style = style;
-        self
-    }
-
-    /// Set label_color
-    pub fn set_label_color(mut self, color: impl Into<String>) -> Self {
-        self.label_color = color.into();
-        self
-    }
-
-    /// Set message_color
-    pub fn set_message_color(mut self, color: impl Into<String>) -> Self {
-        self.message_color = color.into();
-        self
-    }
-
-    pub fn set_link(mut self, link: impl Into<String>) -> Self {
-        self.link = Some(link.into());
-        self
-    }
-
-    /// Render SVG string
-    pub fn render(&self) -> String {
-        let params = BadgeParams {
-            style: self.style,
-            label: self.label.as_deref(),
-            message: &self.message,
-            label_color: Some(&self.label_color),
-            message_color: &self.message_color,
-            link: self.link.as_deref(),
-            extra_link: self.extra_link.as_deref(),
-        };
-        render_badge_svg(&params)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -786,18 +708,6 @@ mod tests {
         assert!(!svg.is_empty(), "SVG rendering failed");
     }
 
-    #[test]
-    fn test_svg_chain() {
-        // Test chainable API
-        let svg = Badge::new()
-            .set_label("build")
-            .set_message("passing")
-            .set_style(BadgeStyle::flat_square())
-            .set_label_color("#333")
-            .set_message_color("#4c1")
-            .render();
-        assert!(!svg.is_empty(), "SVG rendering failed");
-    }
     #[test]
     fn test_named_color() {
         let params = BadgeParams {
