@@ -6,7 +6,7 @@ use serde::Deserialize;
 
 /// SVG rendering template context, fields must correspond to variables in badge_svg_template_askama.svg
 #[derive(Template)]
-#[template(path = "flat_badge_template.svg", escape = "none")]
+#[template(path = "flat_badge_template.min.svg", escape = "none")]
 struct FlatBadgeSvgTemplateContext<'a> {
     total_width: i32,
     badge_height: i32,
@@ -36,7 +36,7 @@ struct FlatBadgeSvgTemplateContext<'a> {
 }
 /// flat-square SVG rendering template context
 #[derive(Template)]
-#[template(path = "flat_square_badge_template.svg", escape = "none")]
+#[template(path = "flat_square_badge_template.min.svg", escape = "none")]
 struct FlatSquareBadgeSvgTemplateContext<'a> {
     total_width: i32,
     badge_height: i32,
@@ -63,7 +63,7 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
 }
 /// plastic SVG rendering template context
 #[derive(Template)]
-#[template(path = "plastic_badge_template.svg", escape = "none")]
+#[template(path = "plastic_badge_template.min.svg", escape = "none")]
 struct PlasticBadgeSvgTemplateContext<'a> {
     total_width: i32,
     accessible_text: &'a str,
@@ -89,7 +89,7 @@ struct PlasticBadgeSvgTemplateContext<'a> {
 
 /// social SVG rendering template context
 #[derive(Template)]
-#[template(path = "social_badge_template.svg", escape = "none")]
+#[template(path = "social_badge_template.min.svg", escape = "none")]
 struct SocialBadgeSvgTemplateContext<'a> {
     total_width: i32,
     total_height: i32,

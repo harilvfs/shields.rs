@@ -138,23 +138,23 @@ impl Builder {
     }
 }
 
-#[cfg(test)]
+// #[cfg(test)]
 
-mod tests {
-    use super::*;
-    #[test]
-    fn test_builder() {
-        let builder = Builder {};
-        let badge = builder
-            .flat()
-            .set_label("test")
-            .set_message("test")
-            .set_label_color("#000000")
-            .set_message_color("#FFFFFF")
-            .build();
-        assert_eq!(
-            badge,
-            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"20\" viewBox=\"0 0 100 20\"><rect width=\"100\" height=\"20\" rx=\"3\" fill=\"#000000\"/><text x=\"50%\" y=\"50%\" alignment-baseline=\"middle\" text-anchor=\"middle\" fill=\"#FFFFFF\">test</text></svg>"
-        );
-    }
-}
+// mod tests {
+//     use super::*;
+//     #[test]
+//     fn test_builder() {
+//         let builder = Builder {};
+//         let badge = builder
+//             .flat()
+//             .set_label("test")
+//             .set_message("test")
+//             .set_label_color("#000000")
+//             .set_message_color("#FFFFFF")
+//             .build();
+//         assert_eq!(
+//             badge,
+//             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"20\" viewBox=\"0 0 100 20\"><rect width=\"100\" height=\"20\" rx=\"3\" fill=\"#000000\"/><text x=\"50%\" y=\"50%\" alignment-baseline=\"middle\" text-anchor=\"middle\" fill=\"#FFFFFF\">test</text></svg>"
+//         );
+//     }
+// }

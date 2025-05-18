@@ -323,9 +323,11 @@ fn test_svg_compare() {
     for params in test_cases {
         let local_svg = render_badge_svg(&params);
         let url = shields_io_url(&params);
-        let local_svg_norm = normalize_svg(&local_svg);
+        // let local_svg_norm = normalize_svg(&local_svg);
+        let local_svg_norm = local_svg.clone();
         let shields_svg = get_shields_svg_with_cache(&params, &url);
-        let shields_svg_norm = normalize_svg(&shields_svg);
+        // let shields_svg_norm = normalize_svg(&shields_svg);
+        let shields_svg_norm = shields_svg.clone();
 
         // Save
         let cache_dir = Path::new("tests/cache");
