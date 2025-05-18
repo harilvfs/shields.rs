@@ -2,4 +2,3 @@
 *.js
 target
 !templates/*
-*.min.svg
