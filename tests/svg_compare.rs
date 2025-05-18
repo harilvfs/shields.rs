@@ -59,7 +59,7 @@ fn cache_file_name_from_params(params: &BadgeParams) -> String {
 
 /// 获取 shields.io SVG，带本地缓存
 fn get_shields_svg_with_cache(params: &BadgeParams, url: &str) -> String {
-    let cache_dir = Path::new("tests/cache");
+    let cache_dir = Path::new("target/tmp/cache");
     if !cache_dir.exists() {
         fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
     }
@@ -165,13 +165,13 @@ fn test_svg_compare() {
         let shields_svg = get_shields_svg_with_cache(&params, &url);
 
         // Save
-        let cache_dir = Path::new("tests/cache");
+        let cache_dir = Path::new("target/tmp/cache");
         if !cache_dir.exists() {
             fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
         }
 
-        let file_name_local = format!("tests/svg_local.svg");
-        let file_name_shields = format!("tests/svg_shields.svg");
+        let file_name_local = format!("target/tmp/cache/svg_local.svg");
+        let file_name_shields = format!("target/tmp/cache/svg_shields.svg");
         let mut file_local = fs::File::create(&file_name_local).expect("创建本地 SVG 文件失败");
         file_local
             .write_all(local_svg.as_bytes())
