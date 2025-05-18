@@ -138,23 +138,23 @@ impl Builder {
     }
 }
 
-// #[cfg(test)]
+#[cfg(test)]
 
-// mod tests {
-//     use super::*;
-//     #[test]
-//     fn test_builder() {
-//         let builder = Builder {};
-//         let badge = builder
-//             .flat()
-//             .set_label("test")
-//             .set_message("test")
-//             .set_label_color("#000000")
-//             .set_message_color("#FFFFFF")
-//             .build();
-//         assert_eq!(
-//             badge,
-//             "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"100\" height=\"20\" viewBox=\"0 0 100 20\"><rect width=\"100\" height=\"20\" rx=\"3\" fill=\"#000000\"/><text x=\"50%\" y=\"50%\" alignment-baseline=\"middle\" text-anchor=\"middle\" fill=\"#FFFFFF\">test</text></svg>"
-//         );
-//     }
-// }
+mod tests {
+    use super::*;
+    #[test]
+    fn test_builder() {
+        let builder = Builder {};
+        let badge = builder
+            .flat()
+            .set_label("test")
+            .set_message("test")
+            .set_label_color("#000000")
+            .set_message_color("#FFFFFF")
+            .build();
+        assert_eq!(
+            badge,
+            r##"<svg xmlns="http://www.w3.org/2000/svg" width="62" height="20" role="img" aria-label="test: test"><title>test: test</title><linearGradient id="s" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><clipPath id="r"><rect width="62" height="20" rx="3" fill="#fff"/></clipPath><g clip-path="url(#r)"><rect width="31" height="20" fill="#000000"/><rect x="31" width="31" height="20" fill="#ffffff"/><rect width="62" height="20" fill="url(#s)"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110"><text aria-hidden="true" x="165" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="210">test</text><text x="165" y="140" transform="scale(.1)" fill="#fff" textLength="210">test</text><text aria-hidden="true" x="455" y="150" fill="#ccc" fill-opacity=".3" transform="scale(.1)" textLength="210">test</text><text x="455" y="140" transform="scale(.1)" fill="#333" textLength="210">test</text></g></svg>"##
+        );
+    }
+}
