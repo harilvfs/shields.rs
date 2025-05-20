@@ -2,6 +2,7 @@
 {% let has_message = !message.is_empty() %}
 {% let has_one_link = !link.is_empty() && extra_link.is_empty() %}
 {% let has_two_link = !link.is_empty() && !extra_link.is_empty() %}
+{% let has_logo = !logo.is_empty() %}
 <svg xmlns="http://www.w3.org/2000/svg" width="{{ total_width }}" height="18"{% if !has_two_link %} role="img" aria-label="{{ accessible_text }}"{% endif %}>
     {% if !has_two_link %}
     <title>{{ accessible_text }}</title>
@@ -24,8 +25,13 @@
         <rect width="{{ total_width }}" height="18" fill="url(#s)" />
     </g>
     <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110"> 
+
+        {% if has_logo %}
+        <image x="5" y="2" width="14" height="14" href="{{ logo }}" />
+        {% endif %}
+
         {% if has_label %} 
-        {% if has_two_link %}<a target="_blank" href="{{ link }}"> <rect width="{{ left_width }}" x="0" height="18" fill="rgba(0,0,0,0)"/>{% endif %}
+        {% if has_two_link %}<a target="_blank" href="{{ link }}"> <rect width="{{ left_width }}" x="{{ rect_offset }}" height="18" fill="rgba(0,0,0,0)"/>{% endif %}
         <text aria-hidden="true" x="{{ label_x }}" y="140" fill="{{ label_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ label_text_length }}">{{ label }}</text>   
         <text x="{{ label_x }}" y="130" transform="scale(.1)" fill="{{ label_text_color }}" textLength="{{ label_text_length }}">{{ label }}</text>
         {% if has_two_link %}</a>{% endif %}
@@ -33,7 +39,7 @@
 
        
         {% if has_message %}
-        {% if has_two_link %}<a target="_blank" href="{{ extra_link }}"> <rect width="{{ right_width }}" x="{{ left_width }}" height="18" fill="rgba(0,0,0,0)"/>{% endif %}
+        {% if has_two_link %}<a target="_blank" href="{{ extra_link }}"> <rect width="{{ right_width }}" x="{{ message_link_x }}" height="18" fill="rgba(0,0,0,0)"/>{% endif %}
         <text aria-hidden="true" x="{{ message_x }}" y="140" fill="{{ message_shadow_color }}" fill-opacity=".3" transform="scale(.1)" textLength="{{ message_text_length }}">{{ message }}</text>     <text x="{{ message_x }}" y="130" transform="scale(.1)" fill="{{ message_text_color }}" textLength="{{ message_text_length }}">{{ message }}</text>
         {% if has_two_link %}</a>{% endif %}
         {% endif %}

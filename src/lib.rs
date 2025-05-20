@@ -1,6 +1,7 @@
 use askama::{Template, filters::capitalize};
 pub mod builder;
 pub mod measurer;
+use base64::Engine;
 use color_util::to_svg_color;
 use serde::Deserialize;
 
@@ -15,7 +16,6 @@ struct FlatBadgeSvgTemplateContext<'a> {
     right_width: i32,
     label_color: &'a str,
     message_color: &'a str,
-    rx: i32,
     font_family: &'a str,
     font_size_scaled: i32,
 
@@ -33,6 +33,11 @@ struct FlatBadgeSvgTemplateContext<'a> {
 
     link: &'a str,
     extra_link: &'a str,
+
+    logo: &'a str,
+    rect_offset: i32,
+
+    message_link_x: i32,
 }
 /// flat-square SVG rendering template context
 #[derive(Template)]
@@ -60,6 +65,10 @@ struct FlatSquareBadgeSvgTemplateContext<'a> {
 
     link: &'a str,
     extra_link: &'a str,
+    logo: &'a str,
+    rect_offset: i32,
+
+    message_link_x: i32,
 }
 /// plastic SVG rendering template context
 #[derive(Template)]
@@ -85,6 +94,11 @@ struct PlasticBadgeSvgTemplateContext<'a> {
 
     link: &'a str,
     extra_link: &'a str,
+
+    logo: &'a str,
+    rect_offset: i32,
+
+    message_link_x: i32,
 }
 
 /// social SVG rendering template context
@@ -95,10 +109,10 @@ struct SocialBadgeSvgTemplateContext<'a> {
     total_height: i32,
     internal_height: u32,
     accessible_text: &'a str,
-    label_rect_width: u32,
+    label_rect_width: i32,
     message_bubble_main_x: f32,
     message_rect_width: u32,
-    message_bubble_notch_x: u32,
+    message_bubble_notch_x: i32,
     label_text_x: f32,
     label_text_length: u32,
     label: &'a str,
@@ -108,6 +122,8 @@ struct SocialBadgeSvgTemplateContext<'a> {
 
     link: &'a str,
     extra_link: &'a str,
+
+    logo: &'a str,
 }
 
 // --- Color processing utility module ---
@@ -422,18 +438,22 @@ pub struct BadgeParams<'a> {
     pub message_color: &'a str,
     pub link: Option<&'a str>,
     pub extra_link: Option<&'a str>,
+    pub logo: Option<&'a str>,
+    pub logo_color: Option<&'a str>,
 }
 
 /// Public API: Generate SVG string
 pub fn render_badge_svg(params: &BadgeParams) -> String {
     render_badge(
+        params.style,
         params.label,
         params.message,
         params.label_color,
         params.message_color,
-        params.style,
         params.link,
         params.extra_link,
+        params.logo,
+        params.logo_color,
     )
 }
 
@@ -453,29 +473,81 @@ fn create_accessible_text(label: Option<&str>, message: &str) -> String {
 }
 // --- General Badge Rendering Function ---
 fn render_badge(
+    style: BadgeStyle,
     label: Option<&str>,
     message: &str,
     label_color: Option<&str>,
     message_color: &str,
-    style: BadgeStyle,
     link: Option<&str>,
     extra_link: Option<&str>,
+    logo: Option<&str>,
+    logo_color: Option<&str>,
 ) -> String {
-    let has_label_color = label_color.is_some() && !label_color.unwrap().is_empty();
-    let label_color = to_svg_color(label_color.unwrap_or("#555")).unwrap_or("#555".to_string());
+    let icon_svg = match logo {
+        Some(logo) => {
+            let logo = logo.trim();
+            if logo.is_empty() {
+                ""
+            } else {
+                // let logo_color = logo_color.unwrap_or("#555");
+                // let icon = to_svg_color(logo_color).unwrap_or("#555".to_string());
+                let icon = logo;
+                let svg = simpleicons::Icon::get_svg(icon);
+                match svg {
+                    Some(svg) => svg,
+                    None => "",
+                }
+            }
+        }
+        None => "",
+    };
+    // 如果 logo 为 <svg 开头，则需要获取 base64 编码
+    // 通过 cargo add base64 来引入 base64 crate
+    let logo = if icon_svg.starts_with("<svg") {
+        // 将 "<svg" 替换为 "<svg fill="whitesmoke""
+        let logo_svg = match style {
+            BadgeStyle::Social => icon_svg.replace("<svg", "<svg fill=\"#000000\""),
+            _ => icon_svg.replace("<svg", "<svg fill=\"whitesmoke\""),
+        };
+        let base64_logo = base64::engine::general_purpose::STANDARD.encode(logo_svg);
+        format!("data:image/svg+xml;base64,{}", base64_logo)
+    } else {
+        icon_svg.to_string()
+    };
+    let has_logo = !logo.is_empty();
+    let logo_width = 14;
+    let mut logo_padding = 3;
+    if label.is_some() && label.unwrap().is_empty() {
+        logo_padding = 0;
+    }
+
+    let total_logo_width = if has_logo {
+        logo_width + logo_padding
+    } else {
+        0
+    };
+
+    let has_label_color = !label_color.unwrap_or("").is_empty();
     let message_color = to_svg_color(message_color).unwrap_or("#007ec6".to_string());
-    let label_color = label_color.as_str();
+    let mut label_color = label_color.unwrap_or("");
+
+    // 参数: BadgeParams { style: Base(Flat), label: None    , message: "message", label_color: Some(""), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some(""), logo_color: None }
+    // 参数: BadgeParams { style: Base(Flat), label: Some(""), message: "message", label_color: Some(""), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some(""), logo_color: None }
+    if label.unwrap_or("").is_empty() && label_color.is_empty() {
+        if has_logo {
+            label_color = "#555";
+        } else {
+            label_color = message_color.as_str();
+        }
+    }
+
+    let binding = to_svg_color(label_color).unwrap_or("#555".to_string());
+    let label_color = binding.as_str();
+
     let message_color = message_color.as_str();
+
     match style {
         BadgeStyle::Base(base) => {
-            let rx = match base {
-                BaseBadgeStyle::FlatSquare => 0,
-                _ => 3,
-            };
-            let logo_width = 0;
-            let logo_padding = 0;
-            let has_logo = false;
-            let total_logo_width = logo_width + logo_padding;
             let accessible_text = create_accessible_text(label, message);
             // 如果 style 是 Plastic, 则空 label 字符串也视为无 label。
             let has_label_content = label.is_some() && !label.unwrap().is_empty();
@@ -493,6 +565,7 @@ fn render_badge(
             } else {
                 0
             };
+
             if has_label && label.is_some() {
                 let label = label.unwrap();
                 if label.is_empty() {
@@ -500,6 +573,23 @@ fn render_badge(
                 }
             }
             let message_width = preferred_width_of(message, Font::VerdanaNormal);
+
+            println!(
+                "label: {:?}, has_logo: {}, left_width: {}",
+                label, has_logo, left_width
+            );
+            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("    "), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
+            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("blue"), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
+            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("blue"), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
+            let offset = if label.is_none() && has_logo {
+                println!("-3 left_width: {}", left_width);
+                -3 as i32
+            } else {
+                println!("+0 left_width: {}", left_width);
+                0
+            };
+
+            let left_width = left_width + offset as i32;
             let mut message_margin: i32 =
                 left_width as i32 - if message.is_empty() { 0 } else { 1 };
             if !has_label {
@@ -509,37 +599,55 @@ fn render_badge(
                     message_margin = message_margin + 1
                 }
             }
-            let mut right_width = message_width + 2 * HORIZONTAL_PADDING;
+
+            let mut right_width = (message_width + 2 * HORIZONTAL_PADDING) as i32;
             if has_logo && !has_label {
-                right_width += total_logo_width
+                right_width += total_logo_width as i32
                     + if !message.is_empty() {
-                        HORIZONTAL_PADDING - 1
+                        (HORIZONTAL_PADDING - 1) as i32
                     } else {
-                        0
+                        0 as i32
                     };
             }
+
+            let label_x = 10.0
+                * (label_margin as f32 + (0.5 * label_width as f32) + HORIZONTAL_PADDING as f32)
+                + offset as f32;
+            let label_width_scaled = label_width * 10;
+            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("blue"), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
+            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("    "), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
+            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("    "), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
             let total_width = left_width + right_width as i32;
 
+            let right_width = right_width + if !has_label_color { offset } else { 0 };
+
+            // Gradient colors can be customized as in the original implementation, or parameterized
+            let (label_text_color, label_shadow_color) = colors_for_background(label_color);
+            let (message_text_color, message_shadow_color) = colors_for_background(message_color);
+            let rect_offset = if has_logo { 19 } else { 0 };
+
+            let message_link_x = if has_logo
+                && !has_label
+                && (extra_link.is_none() || !extra_link.unwrap().is_empty())
+            {
+                total_logo_width as i32 + HORIZONTAL_PADDING as i32
+            } else {
+                left_width
+            };
+
+            let has_extra_link = !extra_link.unwrap_or("").is_empty();
             let message_x = 10.0
                 * (message_margin as f32
                     + (0.5 * message_width as f32)
                     + HORIZONTAL_PADDING as f32);
+            let message_link_x = message_link_x
+                + if !has_label && has_extra_link {
+                    offset
+                } else {
+                    0
+                } as i32;
             let message_width_scaled = message_width * 10;
-
-            let label_x = 10.0
-                * (label_margin as f32 + (0.5 * label_width as f32) + HORIZONTAL_PADDING as f32);
-            let label_color = if has_label { label_color } else { "#e05d44" };
-            let label_width_scaled = label_width * 10;
-
-            let label_color = if has_label || has_label_color {
-                label_color
-            } else {
-                message_color
-            };
-            // Gradient colors can be customized as in the original implementation, or parameterized
-            let (label_text_color, label_shadow_color) = colors_for_background(label_color);
-            let (message_text_color, message_shadow_color) = colors_for_background(message_color);
-
+            let left_width = if left_width < 0 { 0 } else { left_width };
             match base {
                 BaseBadgeStyle::Flat => FlatBadgeSvgTemplateContext {
                     font_family: FONT_FAMILY,
@@ -553,7 +661,6 @@ fn render_badge(
 
                     label_color,
                     message_color,
-                    rx,
 
                     font_size_scaled: FONT_SIZE_SCALED as i32,
 
@@ -571,6 +678,10 @@ fn render_badge(
 
                     link: link.unwrap_or(""),
                     extra_link: extra_link.unwrap_or(""),
+                    logo: logo.as_str(),
+
+                    rect_offset,
+                    message_link_x,
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
@@ -594,6 +705,9 @@ fn render_badge(
                     message,
                     link: link.unwrap_or(""),
                     extra_link: extra_link.unwrap_or(""),
+                    logo: logo.as_str(),
+                    rect_offset,
+                    message_link_x,
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
@@ -616,12 +730,23 @@ fn render_badge(
                     message_color,
                     link: link.unwrap_or(""),
                     extra_link: extra_link.unwrap_or(""),
+                    logo: logo.as_str(),
+                    rect_offset,
+                    message_link_x,
                 }
                 .render()
                 .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e)),
             }
         }
         BadgeStyle::Social => {
+            let label_is_none = label.is_none();
+
+            let offset = if label_is_none && has_logo {
+                -3 as i32
+            } else {
+                0 as i32
+            };
+
             let label = label.unwrap_or("");
             let label = capitalize(label).unwrap().to_string();
             let label_str = label.as_str();
@@ -630,14 +755,12 @@ fn render_badge(
             let label_horizontal_padding = 5;
             let message_horizontal_padding = 4;
             let horizontal_gutter = 6;
-            let logo_width = 0;
-            let logo_padding = 0;
 
-            let total_logo_width = logo_width + logo_padding;
             let label_text_width = preferred_width_of(label_str, Font::HelveticaBold);
 
             let label_rect_width =
-                label_text_width + total_logo_width + 2 * label_horizontal_padding;
+                (label_text_width + total_logo_width + 2 * label_horizontal_padding) as i32
+                    + offset;
 
             let message_text_width = preferred_width_of(message, Font::HelveticaBold);
 
@@ -649,7 +772,8 @@ fn render_badge(
             let label_text_x = FONT_SCALE_UP_FACTOR as f32
                 * (total_logo_width as f32
                     + label_text_width as f32 / 2.0
-                    + label_horizontal_padding as f32);
+                    + label_horizontal_padding as f32
+                    + offset as f32);
             let message_text_x = FONT_SCALE_UP_FACTOR as f32
                 * (label_rect_width as f32
                     + horizontal_gutter as f32
@@ -659,14 +783,15 @@ fn render_badge(
 
             let left_width = label_rect_width + 1;
             let right_width = if has_message {
-                horizontal_gutter + message_rect_width
+                horizontal_gutter + message_rect_width as i32
             } else {
                 0
             };
-            let total_width = left_width + right_width;
+
+            let total_width = left_width + right_width as i32;
 
             SocialBadgeSvgTemplateContext {
-                total_width: total_width as i32,
+                total_width: total_width,
                 total_height: BADGE_HEIGHT as i32,
                 internal_height: internal_height,
                 accessible_text: accessible_text.as_str(),
@@ -682,6 +807,7 @@ fn render_badge(
                 label_rect_width,
                 link: link.unwrap_or(""),
                 extra_link: extra_link.unwrap_or(""),
+                logo: logo.as_str(),
             }
             .render()
             .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
@@ -703,6 +829,8 @@ mod tests {
             message_color: "#4c1",
             link: None,
             extra_link: None,
+            logo: None,
+            logo_color: None,
         };
         let svg = render_badge_svg(&params);
         assert!(!svg.is_empty(), "SVG rendering failed");
@@ -718,6 +846,8 @@ mod tests {
             message_color: "blue",
             link: None,
             extra_link: None,
+            logo: None,
+            logo_color: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -740,6 +870,8 @@ mod tests {
             message_color: "critical",
             link: None,
             extra_link: None,
+            logo: None,
+            logo_color: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -762,6 +894,8 @@ mod tests {
             message_color: "dfb317",
             link: None,
             extra_link: None,
+            logo: None,
+            logo_color: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -784,6 +918,8 @@ mod tests {
             message_color: "hsl(120,100%,25%)",
             link: None,
             extra_link: None,
+            logo: None,
+            logo_color: None,
         };
         let svg = render_badge_svg(&params);
         assert!(
@@ -806,6 +942,8 @@ mod tests {
             message_color: "",
             link: None,
             extra_link: None,
+            logo: None,
+            logo_color: None,
         };
         let svg = render_badge_svg(&params);
         assert!(

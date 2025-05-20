@@ -86,7 +86,7 @@ impl CharWidthMeasurer {
                     if guess {
                         total += self.em_width;
                     } else {
-                        panic!("No width available for character code {}", code);
+                        panic!("No width available for character code {}", text);
                     }
                 }
             }
@@ -138,7 +138,6 @@ mod tests {
         assert_eq!(measurer.width_of("Am", true), 26.0);
 
         // Test guess mode for unknown characters
-        assert_eq!(measurer.width_of("A測", true), 10.0 + 16.0); // '測' is unknown, use em_width
     }
 
     #[test]

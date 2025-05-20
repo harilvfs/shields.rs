@@ -31,6 +31,8 @@ fn shields_io_url(params: &BadgeParams) -> String {
         ("color", params.message_color),
         ("link", params.link.unwrap_or("")),
         ("link", params.extra_link.unwrap_or("")),
+        ("logo", params.logo.unwrap_or("")),
+        ("logoColor", params.logo_color.unwrap_or("")),
     ];
     let mut url = format!("{}&", url);
     for (key, value) in queries.iter() {
@@ -64,8 +66,9 @@ fn get_shields_svg_with_cache(params: &BadgeParams, url: &str) -> String {
         fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
     }
     let file_name = cache_file_name_from_params(params);
+    // 编码文件成 MD5
+    let file_name = format!("{:x}.svg", md5::compute(file_name));
     let cache_path = cache_dir.join(file_name);
-
     // 优先读取缓存
     if cache_path.exists() {
         let mut file = fs::File::open(&cache_path).expect("读取缓存文件失败");
@@ -101,7 +104,8 @@ fn get_shields_svg_with_cache(params: &BadgeParams, url: &str) -> String {
         )
     });
 
-    let mut file = fs::File::create(&cache_path).expect("写入缓存文件失败");
+    let mut file = fs::File::create(&cache_path)
+        .expect(format!("创建缓存文件失败: {:?}", cache_path.display()).as_str());
     file.write_all(svg.as_bytes()).expect("写入缓存内容失败");
 
     svg
@@ -120,6 +124,7 @@ fn test_svg_compare() {
         vec![Some("https://example.com"), Some("https://example2.com")],
         vec![Some("https://example.com"), Some("")],
     ];
+    let logo_selections = vec![Some("rust"), Some(""), None];
     let style_selections = vec![
         BadgeStyle::Base(BaseBadgeStyle::Flat),
         BadgeStyle::Base(BaseBadgeStyle::Plastic),
@@ -133,25 +138,29 @@ fn test_svg_compare() {
             for label_color in label_color_selections.iter() {
                 for message_color in message_color_selections.iter() {
                     for links in links_selections.iter() {
-                        for style in style_selections.iter() {
-                            if links.len() < 2 {
-                                continue;
+                        for logo in logo_selections.iter() {
+                            for style in style_selections.iter() {
+                                if links.len() < 2 {
+                                    continue;
+                                }
+                                let link = links[0].clone();
+                                let extra_link = links[1].clone();
+                                if link.is_none() && extra_link.is_none() {
+                                    continue;
+                                }
+                                let params = BadgeParams {
+                                    style: *style,
+                                    label: *label,
+                                    message,
+                                    label_color: *label_color,
+                                    message_color,
+                                    link: links[0],
+                                    extra_link: links[1],
+                                    logo: *logo,
+                                    logo_color: None,
+                                };
+                                test_cases.push(params);
                             }
-                            let link = links[0].clone();
-                            let extra_link = links[1].clone();
-                            if link.is_none() && extra_link.is_none() {
-                                continue;
-                            }
-                            let params = BadgeParams {
-                                style: *style,
-                                label: *label,
-                                message,
-                                label_color: *label_color,
-                                message_color,
-                                link: links[0],
-                                extra_link: links[1],
-                            };
-                            test_cases.push(params);
                         }
                     }
                 }
@@ -159,6 +168,7 @@ fn test_svg_compare() {
         }
     }
 
+    let mut test_case_count = 0;
     for params in test_cases {
         let local_svg = render_badge_svg(&params);
         let url = shields_io_url(&params);
@@ -169,9 +179,12 @@ fn test_svg_compare() {
         if !cache_dir.exists() {
             fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
         }
+        test_case_count += 1;
 
-        let file_name_local = format!("target/tmp/cache/svg_local.svg");
-        let file_name_shields = format!("target/tmp/cache/svg_shields.svg");
+        println!("测试第 {} 个参数组合", test_case_count);
+
+        let file_name_local = format!("target/tmp/svg_local.svg");
+        let file_name_shields = format!("target/tmp/svg_shields.svg");
         let mut file_local = fs::File::create(&file_name_local).expect("创建本地 SVG 文件失败");
         file_local
             .write_all(local_svg.as_bytes())
