@@ -1,8 +1,11 @@
+use std::str::FromStr;
+
 use askama::{Template, filters::capitalize};
 pub mod builder;
 pub mod measurer;
 use base64::Engine;
 use color_util::to_svg_color;
+use csscolorparser::Color;
 use serde::Deserialize;
 
 /// SVG rendering template context, fields must correspond to variables in badge_svg_template_askama.svg
@@ -130,11 +133,12 @@ struct SocialBadgeSvgTemplateContext<'a> {
 // Supports standardization and SVG output of named colors, aliases, hex, and CSS color inputs
 
 mod color_util {
+    use csscolorparser::Color;
     use lru::LruCache;
     use once_cell::sync::Lazy;
-    use regex::Regex;
     use std::collections::HashMap;
     use std::num::NonZeroUsize;
+    use std::str::FromStr;
     use std::sync::Mutex;
 
     // Named color mapping
@@ -174,9 +178,7 @@ mod color_util {
 
     // Simplified CSS color validation (supports rgb(a), hsl(a), common formats)
     pub fn is_css_color(s: &str) -> bool {
-        static CSS_COLOR_RE: Lazy<Regex> =
-            Lazy::new(|| Regex::new(r"^(rgb|rgba|hsl|hsla)\s*\(").unwrap());
-        CSS_COLOR_RE.is_match(s.trim())
+        Color::from_str(s).is_ok()
     }
 
     /// Standardizes color input, returning a string usable in SVG or None
@@ -384,7 +386,7 @@ pub(crate) fn preferred_width_of(text: &str, font: Font) -> u32 {
     rounded
 }
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BaseBadgeStyle {
     Flat,
@@ -392,7 +394,7 @@ pub enum BaseBadgeStyle {
     Plastic,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy)]
+#[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
 pub enum BadgeStyle {
     Base(BaseBadgeStyle),
@@ -483,6 +485,14 @@ fn render_badge(
     logo: Option<&str>,
     logo_color: Option<&str>,
 ) -> String {
+    let default_logo_color = if style == BadgeStyle::Social {
+        "#000000"
+    } else {
+        "whitesmoke"
+    };
+
+    let logo_color = logo_color.unwrap_or(default_logo_color);
+    let logo_color = to_svg_color(logo_color).unwrap_or(default_logo_color.to_string());
     let icon_svg = match logo {
         Some(logo) => {
             let logo = logo.trim();
@@ -504,11 +514,7 @@ fn render_badge(
     // 如果 logo 为 <svg 开头，则需要获取 base64 编码
     // 通过 cargo add base64 来引入 base64 crate
     let logo = if icon_svg.starts_with("<svg") {
-        // 将 "<svg" 替换为 "<svg fill="whitesmoke""
-        let logo_svg = match style {
-            BadgeStyle::Social => icon_svg.replace("<svg", "<svg fill=\"#000000\""),
-            _ => icon_svg.replace("<svg", "<svg fill=\"whitesmoke\""),
-        };
+        let logo_svg = icon_svg.replace("<svg", format!("<svg fill=\"{}\"", logo_color).as_str());
         let base64_logo = base64::engine::general_purpose::STANDARD.encode(logo_svg);
         format!("data:image/svg+xml;base64,{}", base64_logo)
     } else {
@@ -574,18 +580,9 @@ fn render_badge(
             }
             let message_width = preferred_width_of(message, Font::VerdanaNormal);
 
-            println!(
-                "label: {:?}, has_logo: {}, left_width: {}",
-                label, has_logo, left_width
-            );
-            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("    "), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
-            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("blue"), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
-            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("blue"), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
             let offset = if label.is_none() && has_logo {
-                println!("-3 left_width: {}", left_width);
                 -3 as i32
             } else {
-                println!("+0 left_width: {}", left_width);
                 0
             };
 
@@ -614,16 +611,21 @@ fn render_badge(
                 * (label_margin as f32 + (0.5 * label_width as f32) + HORIZONTAL_PADDING as f32)
                 + offset as f32;
             let label_width_scaled = label_width * 10;
-            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("blue"), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
-            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("    "), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
-            // 参数: BadgeParams { style: Base(Flat), label: None, message: "message", label_color: Some("    "), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some("rust"), logo_color: None }
             let total_width = left_width + right_width as i32;
 
             let right_width = right_width + if !has_label_color { offset } else { 0 };
-
+            let hex_label_color = Color::from_str(label_color)
+                .unwrap_or(Color::from_str("#555").unwrap())
+                .to_hex_string();
+            let hex_label_color = hex_label_color.as_str();
+            let hex_message_color = Color::from_str(message_color)
+                .unwrap_or(Color::from_str("#007ec6").unwrap())
+                .to_hex_string();
+            let hex_message_color = hex_message_color.as_str();
             // Gradient colors can be customized as in the original implementation, or parameterized
-            let (label_text_color, label_shadow_color) = colors_for_background(label_color);
-            let (message_text_color, message_shadow_color) = colors_for_background(message_color);
+            let (label_text_color, label_shadow_color) = colors_for_background(hex_label_color);
+            let (message_text_color, message_shadow_color) =
+                colors_for_background(hex_message_color);
             let rect_offset = if has_logo { 19 } else { 0 };
 
             let message_link_x = if has_logo
@@ -817,6 +819,10 @@ fn render_badge(
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
+    use csscolorparser::Color;
+
     use super::*;
     #[test]
     fn test_svg() {
@@ -954,5 +960,27 @@ mod tests {
             svg.contains("fill=\"#007ec6\""),
             "Empty message_color did not fallback to default color"
         );
+    }
+
+    #[test]
+    fn test_color() {
+        // 解析名称
+        let c = Color::from_str("red").unwrap();
+        println!("{:?}", c);
+
+        // 解析HEX
+        let c = Color::from_str("#ff0080").unwrap();
+        println!("{:?}", c);
+
+        // 解析RGBA
+        let c = Color::from_str("rgba(255,255,0,0.75)").unwrap();
+        println!("{:?}", c);
+
+        // 解析HSL
+        let c = Color::from_str("hsl(120, 100%, 50%)").unwrap();
+        println!("{:?}", c);
+
+        let c = Color::from_str("notexists").is_err();
+        println!("{:?}", c);
     }
 }

@@ -23,6 +23,8 @@ fn bench_flat_badge(c: &mut Criterion) {
                 message_color: "#4c1",
                 link: None,
                 extra_link: None,
+                logo: None,
+                logo_color: None,
             };
             let _svg = render_badge_svg(&params);
         });

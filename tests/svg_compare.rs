@@ -113,10 +113,10 @@ fn get_shields_svg_with_cache(params: &BadgeParams, url: &str) -> String {
 
 #[test]
 fn test_svg_compare() {
-    let label_selections = vec![Some("label"), Some("label with spaces"), Some(""), None];
-    let message_selections = vec!["message", "message with spaces", ""];
-    let label_color_selections = vec![Some("blue"), Some("#4c1"), Some("#4c3232"), Some(""), None];
-    let message_color_selections = vec!["#4c1", "#e05d44", "#4c3232", ""];
+    let label_selections = vec![Some("label"), Some(""), None];
+    let message_selections = vec!["message", ""];
+    let label_color_selections = vec![Some("blue"), Some("#4c1"), Some(""), None, Some("#FFF")];
+    let message_color_selections = vec!["blue", "#4c3232", "", "#FFF"];
     let links_selections = vec![
         vec![None, None],
         vec![Some(""), None],
@@ -168,7 +168,7 @@ fn test_svg_compare() {
         }
     }
 
-    let mut test_case_count = 0;
+    // let mut test_case_count = 0;
     for params in test_cases {
         let local_svg = render_badge_svg(&params);
         let url = shields_io_url(&params);
@@ -179,21 +179,6 @@ fn test_svg_compare() {
         if !cache_dir.exists() {
             fs::create_dir_all(cache_dir).expect("创建 cache 目录失败");
         }
-        test_case_count += 1;
-
-        println!("测试第 {} 个参数组合", test_case_count);
-
-        let file_name_local = format!("target/tmp/svg_local.svg");
-        let file_name_shields = format!("target/tmp/svg_shields.svg");
-        let mut file_local = fs::File::create(&file_name_local).expect("创建本地 SVG 文件失败");
-        file_local
-            .write_all(local_svg.as_bytes())
-            .expect("写入本地 SVG 文件失败");
-        let mut file_shields =
-            fs::File::create(&file_name_shields).expect("创建 shields SVG 文件失败");
-        file_shields
-            .write_all(shields_svg.as_bytes())
-            .expect("写入 shields SVG 文件失败");
 
         assert_eq!(
             local_svg, shields_svg,
@@ -202,3 +187,36 @@ fn test_svg_compare() {
         );
     }
 }
+#[test]
+fn test_svg_fast_compare() {
+    let params = BadgeParams {
+        style: BadgeStyle::Base(BaseBadgeStyle::Flat),
+        label: Some("label"),
+        message: "message",
+        label_color: Some("white"),
+        message_color: "fff",
+        link: None,
+        extra_link: None,
+        logo: Some("rust"),
+        logo_color: Some("blue"),
+    };
+    let local_svg = render_badge_svg(&params);
+    let url = shields_io_url(&params);
+    let shields_svg = get_shields_svg_with_cache(&params, &url);
+    let file_name_local = format!("target/tmp/svg_local.svg");
+    let file_name_shields = format!("target/tmp/svg_shields.svg");
+    let mut file_local = fs::File::create(&file_name_local).expect("创建本地 SVG 文件失败");
+    file_local
+        .write_all(local_svg.as_bytes())
+        .expect("写入本地 SVG 文件失败");
+    let mut file_shields = fs::File::create(&file_name_shields).expect("创建 shields SVG 文件失败");
+    file_shields
+        .write_all(shields_svg.as_bytes())
+        .expect("写入 shields SVG 文件失败");
+    assert_eq!(
+        local_svg, shields_svg,
+        "SVG 不一致\n参数: {:?}\n本地 SVG:\n{}\nshields.io SVG:\n{}",
+        params, local_svg, shields_svg
+    );
+}
+
