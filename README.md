@@ -6,6 +6,14 @@ A high-performance badge rendering engine written in Rust, supporting SVG output
 
 Our goal is to achieve pixel-perfect, 100% identical rendering results to [shields.io](https://shields.io/). We utilize precisely the same text length calculation data to ensure full consistency, while delivering significantly improved efficiency.
 
+**🟢 Bitwise-Identical SVG Output**
+
+Not only do we pursue pixel-level similarity, but we also guarantee that the generated SVG string is bitwise-identical to the output returned by shields.io for the same parameters. This ensures absolute compatibility and consistency for all use cases.
+
+**🎨 Supported Styles**
+
+We support all major badge styles (except "for the badge"): `flat`, `flat-square`, `plastic`, and `social`.
+
 ## Installation
 
 ### Prerequisites
@@ -39,11 +47,33 @@ The library provides a chainable API for customizing badges. You can set the lab
 use shields::Badge;
 
 fn main() {
-    let svg = Badge::new()
+    let svg = Badge::flat()
         .set_label("build")
         .set_message("passing")
         .render();
     std::fs::write("badge.svg", svg).unwrap();
+}
+```
+
+### Advanced Example
+
+A more comprehensive example demonstrating advanced customization:
+
+```rust
+use shields::Badge;
+
+fn main() {
+    let svg = Badge::plastic()
+        .set_label("coverage")
+        .set_message("98%")
+        .set_color("#4c1")
+        .set_label_color("#555")
+        .set_logo("github")
+        .set_logo_color("white")
+        .set_logo_width(18)
+        .set_link("https://docs.rs/shields")
+        .render();
+    std::fs::write("badge-advanced.svg", svg).unwrap();
 }
 ```
 
