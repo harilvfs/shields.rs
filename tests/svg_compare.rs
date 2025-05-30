@@ -131,7 +131,7 @@ fn test_svg_compare() {
         BadgeStyle::Base(BaseBadgeStyle::FlatSquare),
         BadgeStyle::Social,
     ];
-
+    let logo_color_selections = vec![Some("blue"), None];
     let mut test_cases = vec![];
     for label in label_selections.iter() {
         for message in message_selections.iter() {
@@ -139,27 +139,29 @@ fn test_svg_compare() {
                 for message_color in message_color_selections.iter() {
                     for links in links_selections.iter() {
                         for logo in logo_selections.iter() {
-                            for style in style_selections.iter() {
-                                if links.len() < 2 {
-                                    continue;
+                            for logo_color in logo_color_selections.iter() {
+                                for style in style_selections.iter() {
+                                    if links.len() < 2 {
+                                        continue;
+                                    }
+                                    let link = links[0].clone();
+                                    let extra_link = links[1].clone();
+                                    if link.is_none() && extra_link.is_none() {
+                                        continue;
+                                    }
+                                    let params = BadgeParams {
+                                        style: *style,
+                                        label: *label,
+                                        message,
+                                        label_color: *label_color,
+                                        message_color,
+                                        link: links[0],
+                                        extra_link: links[1],
+                                        logo: *logo,
+                                        logo_color: *logo_color,
+                                    };
+                                    test_cases.push(params);
                                 }
-                                let link = links[0].clone();
-                                let extra_link = links[1].clone();
-                                if link.is_none() && extra_link.is_none() {
-                                    continue;
-                                }
-                                let params = BadgeParams {
-                                    style: *style,
-                                    label: *label,
-                                    message,
-                                    label_color: *label_color,
-                                    message_color,
-                                    link: links[0],
-                                    extra_link: links[1],
-                                    logo: *logo,
-                                    logo_color: None,
-                                };
-                                test_cases.push(params);
                             }
                         }
                     }
@@ -219,4 +221,3 @@ fn test_svg_fast_compare() {
         params, local_svg, shields_svg
     );
 }
-
