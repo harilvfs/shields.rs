@@ -64,6 +64,30 @@ impl CharWidthMeasurer {
         Ok(CharWidthMeasurer::from_data(data))
     }
 
+    pub fn load_from_str(data: &str) -> io::Result<Self> {
+        let value: Value = serde_json::from_str(data)?;
+        let arr = value
+            .as_array()
+            .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidData, "JSON is not an array"))?;
+        let mut data = Vec::with_capacity(arr.len());
+        for item in arr {
+            let triple = item.as_array().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "Subitem is not an array")
+            })?;
+            let lower = triple[0].as_u64().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "lower is not an integer")
+            })? as u32;
+            let upper = triple[1].as_u64().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "upper is not an integer")
+            })? as u32;
+            let width = triple[2].as_f64().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidData, "width is not a float")
+            })?;
+            data.push((lower, upper, width));
+        }
+        Ok(CharWidthMeasurer::from_data(data))
+    }
+
     /// Lookup the width of a single character code, equivalent to JS widthOfCharCode
     /// Control characters have width 0, returns None if not found
     pub fn width_of_char_code(&self, char_code: u32) -> Option<f64> {

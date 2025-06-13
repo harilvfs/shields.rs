@@ -261,15 +261,20 @@ pub fn get_text_width(text: &str, font: Font) -> f64 {
     use crate::measurer::CharWidthMeasurer;
     use once_cell::sync::Lazy;
 
-    // Static global, loads JSON on first call, reuses afterwards
+    // 在编译时直接将 JSON 文件内容作为字符串嵌入
+    const VERDANA_JSON_DATA: &str = include_str!("../assets/fonts/verdana-11px-normal.json");
+    const HELVETICA_JSON_DATA: &str = include_str!("../assets/fonts/helvetica-11px-bold.json");
+
     static VERDANA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
-        CharWidthMeasurer::load_sync("assets/fonts/verdana-11px-normal.json")
-            .expect("Unable to load Verdana 11px width table")
+        // 从嵌入的字符串加载数据，而不是从文件系统
+        CharWidthMeasurer::load_from_str(VERDANA_JSON_DATA)
+            .expect("Unable to parse Verdana 11px width table")
     });
 
     static HELVETICA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
-        CharWidthMeasurer::load_sync("assets/fonts/helvetica-11px-bold.json")
-            .expect("Unable to load Helvetica Bold width table")
+        // 从嵌入的字符串加载数据
+        CharWidthMeasurer::load_from_str(HELVETICA_JSON_DATA)
+            .expect("Unable to parse Helvetica Bold width table")
     });
 
     match font {
@@ -277,7 +282,6 @@ pub fn get_text_width(text: &str, font: Font) -> f64 {
         Font::HelveticaBold => HELVETICA_WIDTH_TABLE.width_of(text, true),
     }
 }
-
 macro_rules! round_up_to_odd_float {
     ($func:ident, $float:ty) => {
         fn $func(n: $float) -> u32 {
@@ -616,11 +620,11 @@ fn render_badge(
             let right_width = right_width + if !has_label_color { offset } else { 0 };
             let hex_label_color = Color::from_str(label_color)
                 .unwrap_or(Color::from_str("#555").unwrap())
-                .to_hex_string();
+                .to_css_hex();
             let hex_label_color = hex_label_color.as_str();
             let hex_message_color = Color::from_str(message_color)
                 .unwrap_or(Color::from_str("#007ec6").unwrap())
-                .to_hex_string();
+                .to_css_hex();
             let hex_message_color = hex_message_color.as_str();
             // Gradient colors can be customized as in the original implementation, or parameterized
             let (label_text_color, label_shadow_color) = colors_for_background(hex_label_color);

@@ -1,10 +1,10 @@
 use criterion::{Criterion, criterion_group, criterion_main};
-use rand::{Rng, distributions::Alphanumeric};
+use rand::{Rng, distr::Alphanumeric};
 use shields::{BadgeParams, BadgeStyle, render_badge_svg};
 
 fn random_string() -> String {
-    let len = rand::thread_rng().gen_range(8..=12);
-    rand::thread_rng()
+    let len = rand::rng().random_range(8..=12);
+    rand::rng()
         .sample_iter(&Alphanumeric)
         .take(len)
         .map(char::from)
