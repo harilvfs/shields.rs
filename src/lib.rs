@@ -418,9 +418,9 @@ pub struct BadgeParams<'a> {
     #[serde(default)]
     pub style: BadgeStyle,
     pub label: Option<&'a str>,
-    pub message: &'a str,
+    pub message: Option<&'a str>,
     pub label_color: Option<&'a str>,
-    pub message_color: &'a str,
+    pub message_color: Option<&'a str>,
     pub link: Option<&'a str>,
     pub extra_link: Option<&'a str>,
     pub logo: Option<&'a str>,
@@ -460,9 +460,9 @@ fn create_accessible_text(label: Option<&str>, message: &str) -> String {
 fn render_badge(
     style: BadgeStyle,
     label: Option<&str>,
-    message: &str,
+    message: Option<&str>,
     label_color: Option<&str>,
-    message_color: &str,
+    message_color: Option<&str>,
     link: Option<&str>,
     extra_link: Option<&str>,
     logo: Option<&str>,
@@ -517,6 +517,7 @@ fn render_badge(
     };
 
     let has_label_color = !label_color.unwrap_or("").is_empty();
+    let message_color = message_color.unwrap_or(default_message_color());
     let message_color = to_svg_color(message_color).unwrap_or("#007ec6".to_string());
     let mut label_color = label_color.unwrap_or("");
 
@@ -534,7 +535,7 @@ fn render_badge(
     let label_color = binding.as_str();
 
     let message_color = message_color.as_str();
-
+    let message = message.unwrap_or("");
     match style {
         BadgeStyle::Flat => {
             let accessible_text = create_accessible_text(label, message);
@@ -999,9 +1000,9 @@ mod tests {
         let params = BadgeParams {
             style: BadgeStyle::FlatSquare,
             label: Some("build"),
-            message: "passing",
+            message: Some("passing"),
             label_color: Some("#333"),
-            message_color: "#4c1",
+            message_color: Some("#4c1"),
             link: None,
             extra_link: None,
             logo: None,
@@ -1016,9 +1017,9 @@ mod tests {
         let params = BadgeParams {
             style: BadgeStyle::FlatSquare,
             label: Some("status"),
-            message: "ok",
+            message: Some("ok"),
             label_color: Some("brightgreen"),
-            message_color: "blue",
+            message_color: Some("blue"),
             link: None,
             extra_link: None,
             logo: None,
@@ -1040,9 +1041,9 @@ mod tests {
         let params = BadgeParams {
             style: BadgeStyle::FlatSquare,
             label: Some("status"),
-            message: "ok",
+            message: Some("ok"),
             label_color: Some("gray"),
-            message_color: "critical",
+            message_color: Some("critical"),
             link: None,
             extra_link: None,
             logo: None,
@@ -1064,9 +1065,9 @@ mod tests {
         let params = BadgeParams {
             style: BadgeStyle::FlatSquare,
             label: Some("hex"),
-            message: "ok",
+            message: Some("ok"),
             label_color: Some("#4c1"),
-            message_color: "dfb317",
+            message_color: Some("dfb317"),
             link: None,
             extra_link: None,
             logo: None,
@@ -1088,9 +1089,9 @@ mod tests {
         let params = BadgeParams {
             style: BadgeStyle::FlatSquare,
             label: Some("css"),
-            message: "ok",
+            message: Some("ok"),
             label_color: Some("rgb(0,128,0)"),
-            message_color: "hsl(120,100%,25%)",
+            message_color: Some("hsl(120,100%,25%)"),
             link: None,
             extra_link: None,
             logo: None,
@@ -1112,9 +1113,9 @@ mod tests {
         let params = BadgeParams {
             style: BadgeStyle::FlatSquare,
             label: Some("bad"),
-            message: "ok",
+            message: Some("ok"),
             label_color: Some("notacolor"),
-            message_color: "",
+            message_color: Some(""),
             link: None,
             extra_link: None,
             logo: None,

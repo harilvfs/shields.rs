@@ -17,10 +17,10 @@ fn bench_flat_badge(c: &mut Criterion) {
             let binding = random_string();
             let params = BadgeParams {
                 style: BadgeStyle::Flat,
-                label: Some(&binding),
-                message: &random_string(),
+                label: Some(binding.as_str()),
+                message: Some(binding.as_str()),
                 label_color: Some("#555"),
-                message_color: "#4c1",
+                message_color: Some("#4c1"),
                 link: None,
                 extra_link: None,
                 logo: None,

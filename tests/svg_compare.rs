@@ -16,19 +16,19 @@ fn shields_io_url(params: &BadgeParams) -> String {
         format!(
             "https://img.shields.io/badge/{}-{}-blue?style={}",
             params.label.as_ref().unwrap(),
-            params.message.replace(" ", "%20"),
+            params.message.unwrap_or("").replace(" ", "%20"),
             style
         )
     } else {
         format!(
             "https://img.shields.io/badge/{}-blue?style={}",
-            params.message.replace(" ", "%20"),
+            params.message.unwrap_or("").replace(" ", "%20"),
             style
         )
     };
     let queries = [
         ("labelColor", params.label_color.unwrap_or("")),
-        ("color", params.message_color),
+        ("color", params.message_color.unwrap_or("")),
         ("link", params.link.unwrap_or("")),
         ("link", params.extra_link.unwrap_or("")),
         ("logo", params.logo.unwrap_or("")),
@@ -152,9 +152,9 @@ fn test_svg_compare() {
                                     let params = BadgeParams {
                                         style: *style,
                                         label: *label,
-                                        message,
+                                        message: Some(message),
                                         label_color: *label_color,
-                                        message_color,
+                                        message_color: Some(message_color),
                                         link: links[0],
                                         extra_link: links[1],
                                         logo: *logo,
@@ -194,9 +194,9 @@ fn test_svg_fast_compare() {
     let params = BadgeParams {
         style: BadgeStyle::Flat,
         label: Some("label"),
-        message: "message",
+        message: Some("message"),
         label_color: Some("white"),
-        message_color: "fff",
+        message_color: Some("fff"),
         link: None,
         extra_link: None,
         logo: Some("rust"),
