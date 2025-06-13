@@ -1,4 +1,4 @@
-use shields::{BadgeParams, BadgeStyle, BaseBadgeStyle, render_badge_svg};
+use shields::{BadgeParams, BadgeStyle, render_badge_svg};
 
 use pretty_assertions::assert_eq;
 use std::fs;
@@ -7,9 +7,9 @@ use std::path::Path;
 
 fn shields_io_url(params: &BadgeParams) -> String {
     let style = match params.style {
-        BadgeStyle::Base(BaseBadgeStyle::Flat) => "flat",
-        BadgeStyle::Base(BaseBadgeStyle::Plastic) => "plastic",
-        BadgeStyle::Base(BaseBadgeStyle::FlatSquare) => "flat-square",
+        BadgeStyle::Flat => "flat",
+        BadgeStyle::Plastic => "plastic",
+        BadgeStyle::FlatSquare => "flat-square",
         BadgeStyle::Social => "social",
     };
     let url = if params.label.is_some() {
@@ -126,9 +126,9 @@ fn test_svg_compare() {
     ];
     let logo_selections = vec![Some("rust"), Some(""), None];
     let style_selections = vec![
-        BadgeStyle::Base(BaseBadgeStyle::Flat),
-        BadgeStyle::Base(BaseBadgeStyle::Plastic),
-        BadgeStyle::Base(BaseBadgeStyle::FlatSquare),
+        BadgeStyle::Flat,
+        BadgeStyle::Plastic,
+        BadgeStyle::FlatSquare,
         BadgeStyle::Social,
     ];
     let logo_color_selections = vec![Some("blue"), None];
@@ -192,7 +192,7 @@ fn test_svg_compare() {
 #[test]
 fn test_svg_fast_compare() {
     let params = BadgeParams {
-        style: BadgeStyle::Base(BaseBadgeStyle::Flat),
+        style: BadgeStyle::Flat,
         label: Some("label"),
         message: "message",
         label_color: Some("white"),

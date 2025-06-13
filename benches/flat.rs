@@ -16,7 +16,7 @@ fn bench_flat_badge(c: &mut Criterion) {
         b.iter(|| {
             let binding = random_string();
             let params = BadgeParams {
-                style: BadgeStyle::flat(),
+                style: BadgeStyle::Flat,
                 label: Some(&binding),
                 message: &random_string(),
                 label_color: Some("#555"),

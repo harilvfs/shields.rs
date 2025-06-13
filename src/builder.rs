@@ -279,15 +279,15 @@ impl Builder {
     }
 
     pub fn flat(self) -> ColorBadgeBuilder {
-        ColorBadgeBuilder::new(BadgeStyle::Base(crate::BaseBadgeStyle::Flat))
+        ColorBadgeBuilder::new(BadgeStyle::Flat)
     }
 
     pub fn flat_square(self) -> ColorBadgeBuilder {
-        ColorBadgeBuilder::new(BadgeStyle::Base(crate::BaseBadgeStyle::FlatSquare))
+        ColorBadgeBuilder::new(BadgeStyle::FlatSquare)
     }
 
     pub fn plastic(self) -> ColorBadgeBuilder {
-        ColorBadgeBuilder::new(BadgeStyle::Base(crate::BaseBadgeStyle::Plastic))
+        ColorBadgeBuilder::new(BadgeStyle::Plastic)
     }
 }
 
