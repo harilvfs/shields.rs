@@ -1,6 +1,29 @@
 ## HEAD
 
-[v0.5.0...HEAD](https://github.com/Jannchie/shields.rs/compare/v0.5.0...HEAD)
+[v0.5.1...HEAD](https://github.com/Jannchie/shields.rs/compare/v0.5.1...HEAD)
+
+### :wrench: Chores
+
+- **cargo**: bump cargo include list && downgrade version to 0.5.0 - By [Jianqi Pan](mailto:jannchie@gmail.com) in [68d2ae4](https://github.com/Jannchie/shields.rs/commit/68d2ae4)
+- **deps**: update dependencies lock file - By [Jianqi Pan](mailto:jannchie@gmail.com) in [b151860](https://github.com/Jannchie/shields.rs/commit/b151860)
+- **deps**: update dependencies lock files - By [Jianqi Pan](mailto:jannchie@gmail.com) in [c56cb8a](https://github.com/Jannchie/shields.rs/commit/c56cb8a)
+
+## v0.5.1
+
+[v0.5.0...v0.5.1](https://github.com/Jannchie/shields.rs/compare/v0.5.0...v0.5.1)
+
+### :art: Refactors
+
+- **fonts**: embed font data as string && use load_from_str && update deps - By [Jianqi Pan](mailto:jannchie@gmail.com) in [d435901](https://github.com/Jannchie/shields.rs/commit/d435901)
+
+### :memo: Documentation
+
+- **changelog**: add changelog file documenting release history - By [Jianqi Pan](mailto:jannchie@gmail.com) in [9cbac53](https://github.com/Jannchie/shields.rs/commit/9cbac53)
+
+### :wrench: Chores
+
+- **ci**: remove og.yml workflow - By [Jianqi Pan](mailto:jannchie@gmail.com) in [dad25d0](https://github.com/Jannchie/shields.rs/commit/dad25d0)
+- **ci**: add og.yml workflow for og images - By [Jianqi Pan](mailto:jannchie@gmail.com) in [f285076](https://github.com/Jannchie/shields.rs/commit/f285076)
 
 ## v0.5.0
 
