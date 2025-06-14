@@ -1,3 +1,22 @@
+## v0.8.0
+
+[v0.7.0...v0.8.0](https://github.com/Jannchie/shields.rs/compare/v0.7.0...v0.8.0)
+
+### :rocket: Breaking Changes
+
+- **builder**: update builder pattern for badge configuration - By [Jianqi Pan](mailto:jannchie@gmail.com) in [cb67df4](https://github.com/Jannchie/shields.rs/commit/cb67df4)
+- **builder**: unify and simplify badge builder api - By [Jianqi Pan](mailto:jannchie@gmail.com) in [2e0f385](https://github.com/Jannchie/shields.rs/commit/2e0f385)
+
+### :memo: Documentation
+
+- **changelog**: update changelog for v0.7.0 release - By [Jianqi Pan](mailto:jannchie@gmail.com) in [8d3a729](https://github.com/Jannchie/shields.rs/commit/8d3a729)
+- **readme**: update usage and examples - By [Jianqi Pan](mailto:jannchie@gmail.com) in [d34485c](https://github.com/Jannchie/shields.rs/commit/d34485c)
+- **tests**: translate comments and messages to english - By [Jianqi Pan](mailto:jannchie@gmail.com) in [f6573a0](https://github.com/Jannchie/shields.rs/commit/f6573a0)
+
+### :wrench: Chores
+
+- update lock files - By [Jianqi Pan](mailto:jannchie@gmail.com) in [96e42cd](https://github.com/Jannchie/shields.rs/commit/96e42cd)
+
 ## v0.7.0
 
 [v0.6.0...v0.7.0](https://github.com/Jannchie/shields.rs/compare/v0.6.0...v0.7.0)
