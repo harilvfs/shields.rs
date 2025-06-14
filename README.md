@@ -12,7 +12,7 @@ Not only do we pursue pixel-level similarity, but we also guarantee that the gen
 
 **🎨 Supported Styles**
 
-We support all major badge styles (except "for the badge"): `flat`, `flat-square`, `plastic`, and `social`.
+We support all major badge styles: `flat`, `flat-square`, `plastic`, `social` and `for-the-badge`. Each style can be customized with various properties such as label, message, color, logo, and more.
 
 ## Installation
 
@@ -20,24 +20,6 @@ We support all major badge styles (except "for the badge"): `flat`, `flat-square
 
 - [Rust](https://www.rust-lang.org/tools/install) (edition 2024 or later)
 - Cargo package manager (comes with Rust)
-
-### Build
-
-Clone the repository and build the project:
-
-```bash
-git clone https://github.com/Jannchie/shields.git
-cd shields
-cargo build --release
-```
-
-### Run
-
-To run the badge rendering engine:
-
-```bash
-cargo run --release
-```
 
 ## Usage Example
 
