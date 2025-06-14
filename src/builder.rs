@@ -1,7 +1,45 @@
+//! Badge builder module for shields crate.
+//!
+//! Provides a builder-pattern API for constructing SVG badges with a fluent, ergonomic interface.
+//! This module is ideal for users who want to configure badges step-by-step or with method chaining.
+//!
+//! # Example
+//!
+//! ```rust
+//! use shields::{Badge, BadgeStyle};
+//!
+//! let svg = Badge::style(BadgeStyle::Flat)
+//!     .label("build")
+//!     .message("passing")
+//!     .label_color("green")
+//!     .message_color("brightgreen")
+//!     .logo("github")
+//!     .build();
+//! assert!(svg.contains("passing"));
+//! ```
+//!
+//! See [`BadgeBuilder`] and [`Badge`] for details.
 use crate::{
     BadgeParams, BadgeStyle, default_label_color, default_message_color, render_badge_svg,
 };
 
+/// Builder for constructing SVG badges with a fluent API.
+///
+/// Use [`Badge::style`] to create a new builder, then chain methods to set label, message, colors, logo, and links.
+/// Call [`build`](BadgeBuilder::build) to generate the SVG string.
+///
+/// # Example
+/// ```rust
+/// use shields::{Badge, BadgeStyle};
+/// let svg = Badge::style(BadgeStyle::Flat)
+///     .label("build")
+///     .message("passing")
+///     .label_color("green")
+///     .message_color("brightgreen")
+///     .logo("github")
+///     .build();
+/// assert!(svg.contains("passing"));
+/// ```
 pub struct BadgeBuilder<'a> {
     style: BadgeStyle,
     label: Option<&'a str>,
@@ -15,7 +53,12 @@ pub struct BadgeBuilder<'a> {
 }
 
 impl<'a> BadgeBuilder<'a> {
-    /// Create a new builder
+    /// Creates a new badge builder with the specified style.
+    ///
+    /// This is usually called via [`Badge::style`].
+    ///
+    /// # Arguments
+    /// * `style` - The badge style to use.
     fn new(style: BadgeStyle) -> Self {
         Self {
             style,
@@ -30,55 +73,123 @@ impl<'a> BadgeBuilder<'a> {
         }
     }
 
-    /// Set the label text. Note: method signature now takes &mut self and &'a str
+    /// Sets the label text (left side).
+    ///
+    /// # Arguments
+    /// * `label` - The label text.
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
+    ///
+    /// # Example
+    /// ```
+    /// use shields::{Badge, BadgeStyle};
+    /// let mut builder = Badge::style(BadgeStyle::Flat);
+    /// builder.label("build");
+    /// ```
     pub fn label(&mut self, label: &'a str) -> &mut Self {
         self.label = Some(label);
         self
     }
 
-    /// Set the message text
+    /// Sets the message text (right side).
+    ///
+    /// # Arguments
+    /// * `message` - The message text.
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn message(&mut self, message: &'a str) -> &mut Self {
         self.message = Some(message);
         self
     }
 
-    /// Set the label color
+    /// Sets the label background color.
+    ///
+    /// # Arguments
+    /// * `color` - Color string (hex, name, or alias).
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn label_color(&mut self, color: &'a str) -> &mut Self {
         self.label_color = Some(color);
         self
     }
 
-    /// Set the message color
+    /// Sets the message background color.
+    ///
+    /// # Arguments
+    /// * `color` - Color string (hex, name, or alias).
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn message_color(&mut self, color: &'a str) -> &mut Self {
         self.message_color = Some(color);
         self
     }
 
-    /// Set the logo
+    /// Sets the logo (name or SVG data).
+    ///
+    /// # Arguments
+    /// * `logo` - Logo name or SVG data.
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn logo(&mut self, logo: &'a str) -> &mut Self {
         self.logo = Some(logo);
         self
     }
 
-    /// Set the logo color
+    /// Sets the logo color.
+    ///
+    /// # Arguments
+    /// * `color` - Logo color string.
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn logo_color(&mut self, color: &'a str) -> &mut Self {
         self.logo_color = Some(color);
         self
     }
 
-    /// Set the link
+    /// Sets the main link URL.
+    ///
+    /// # Arguments
+    /// * `link` - Main link URL.
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn link(&mut self, link: &'a str) -> &mut Self {
         self.link = Some(link);
         self
     }
 
-    /// Set the extra link (second link)
+    /// Sets the extra (secondary) link URL.
+    ///
+    /// # Arguments
+    /// * `link` - Extra link URL.
+    ///
+    /// # Returns
+    /// Mutable reference to self for chaining.
     pub fn extra_link(&mut self, link: &'a str) -> &mut Self {
         self.extra_link = Some(link);
         self
     }
 
-    /// Build the SVG string. Note: takes &self, does not consume the builder.
+    /// Builds and returns the SVG badge string.
+    ///
+    /// # Returns
+    /// SVG string representing the badge.
+    ///
+    /// # Example
+    /// ```
+    /// use shields::{Badge, BadgeStyle};
+    /// let svg = Badge::style(BadgeStyle::Flat)
+    ///     .label("build")
+    ///     .message("passing")
+    ///     .build();
+    /// assert!(svg.contains("passing"));
+    /// ```
     pub fn build(&self) -> String {
         let (label_color, message_color) = if self.style == BadgeStyle::Social {
             (None, Some(""))
@@ -163,5 +274,40 @@ mod tests {
         let resp = badge.build();
         assert!(resp.contains("no chaining"));
         assert!(resp.contains("test"));
+    }
+}
+
+/// Entry point for badge builder API.
+///
+/// This struct acts as a namespace for the builder pattern.
+/// Use [`Badge::style`] to start building a badge.
+///
+/// # Example
+/// ```rust
+/// use shields::{Badge, BadgeStyle};
+/// let svg = Badge::style(BadgeStyle::Flat)
+///     .label("build")
+///     .message("passing")
+///     .build();
+/// assert!(svg.contains("passing"));
+/// ```
+pub struct Badge;
+
+impl Badge {
+    /// Creates a new [`BadgeBuilder`] with the specified style.
+    ///
+    /// # Arguments
+    /// * `style` - The badge style to use.
+    ///
+    /// # Returns
+    /// A [`BadgeBuilder`] for further configuration.
+    ///
+    /// # Example
+    /// ```
+    /// use shields::{Badge, BadgeStyle};
+    /// let builder = Badge::style(BadgeStyle::Flat);
+    /// ```
+    pub fn style(style: BadgeStyle) -> BadgeBuilder<'static> {
+        BadgeBuilder::new(style)
     }
 }

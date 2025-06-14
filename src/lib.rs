@@ -1,3 +1,55 @@
+#![doc = r#"
+# shields
+
+A Rust library for generating SVG badges, inspired by [shields.io](https://shields.io/).
+
+This crate provides flexible APIs for creating customizable status badges for CI, version, downloads, and more, supporting multiple styles (flat, plastic, social, for-the-badge, etc.).
+
+## Features
+
+- Generate SVG badge strings with custom label, message, color, logo, and links.
+- Multiple badge styles: flat, flat-square, plastic, social, for-the-badge.
+- Accurate text width calculation using embedded font width tables.
+- Builder pattern and parameter struct APIs.
+- Color normalization and aliasing (e.g., "critical" → red).
+- No runtime file I/O required for badge generation.
+
+## Example
+
+```rust
+use shields::{BadgeStyle, BadgeParams, render_badge_svg};
+
+let params = BadgeParams {
+    style: BadgeStyle::Flat,
+    label: Some("build"),
+    message: Some("passing"),
+    label_color: Some("green"),
+    message_color: Some("brightgreen"),
+    link: Some("https://ci.example.com"),
+    extra_link: None,
+    logo: None,
+    logo_color: None,
+};
+let svg = render_badge_svg(&params);
+assert!(svg.contains("passing"));
+```
+
+Or use the builder API:
+
+```rust
+use shields::{Badge, BadgeStyle};
+
+let svg = Badge::style(BadgeStyle::Plastic)
+    .label("version")
+    .message("1.0.0")
+    .logo("github")
+    .build();
+assert!(svg.contains("version"));
+```
+
+See [`BadgeParams`](crate::BadgeParams), [`BadgeStyle`](crate::BadgeStyle), and [`BadgeBuilder`](crate::builder::BadgeBuilder) for details.
+
+"#]
 use askama::{Template, filters::capitalize};
 use std::str::FromStr;
 pub mod builder;
@@ -448,6 +500,19 @@ pub(crate) fn preferred_width_of(text: &str, font: Font) -> u32 {
 
 #[derive(Deserialize, Debug, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "kebab-case")]
+/// Badge style variants supported by the shields crate.
+///
+/// - `Flat`: Modern flat style (default).
+/// - `FlatSquare`: Flat with square edges.
+/// - `Plastic`: Classic plastic style.
+/// - `Social`: Social badge style (e.g., GitHub social).
+/// - `ForTheBadge`: All-caps, bold, attention-grabbing style.
+///
+/// # Example
+/// ```rust
+/// use shields::BadgeStyle;
+/// let style = BadgeStyle::Plastic;
+/// ```
 pub enum BadgeStyle {
     Flat,
     FlatSquare,
@@ -457,20 +522,55 @@ pub enum BadgeStyle {
 }
 
 impl Default for BadgeStyle {
+    /// Returns the default badge style (`Flat`).
     fn default() -> Self {
         BadgeStyle::Flat
     }
 }
 
+/// Returns the default message color hex string (`#007ec6`).
 pub fn default_message_color() -> &'static str {
     "#007ec6"
 }
 
+/// Returns the default label color hex string (`#555`).
 pub fn default_label_color() -> &'static str {
     "#555"
 }
 
 #[derive(Deserialize, Debug)]
+/// Parameters for generating a badge SVG.
+///
+/// This struct is used to configure all aspects of a badge, including style, label, message, colors, links, and logo.
+///
+/// # Fields
+/// - `style`: Badge style variant (see [`BadgeStyle`]).
+/// - `label`: Optional label text (left side).
+/// - `message`: Optional message text (right side).
+/// - `label_color`: Optional label background color (hex, name, or alias).
+/// - `message_color`: Optional message background color (hex, name, or alias).
+/// - `link`: Optional main link URL.
+/// - `extra_link`: Optional secondary link URL.
+/// - `logo`: Optional logo name or SVG data.
+/// - `logo_color`: Optional logo color.
+///
+/// # Example
+/// ```rust
+/// use shields::{BadgeParams, BadgeStyle, render_badge_svg};
+/// let params = BadgeParams {
+///     style: BadgeStyle::Flat,
+///     label: Some("build"),
+///     message: Some("passing"),
+///     label_color: Some("green"),
+///     message_color: Some("brightgreen"),
+///     link: Some("https://ci.example.com"),
+///     extra_link: None,
+///     logo: None,
+///     logo_color: None,
+/// };
+/// let svg = render_badge_svg(&params);
+/// assert!(svg.contains("passing"));
+/// ```
 pub struct BadgeParams<'a> {
     #[serde(default)]
     pub style: BadgeStyle,
@@ -484,7 +584,31 @@ pub struct BadgeParams<'a> {
     pub logo_color: Option<&'a str>,
 }
 
-/// Public API: Generate SVG string
+/// Generate an SVG badge string from [`BadgeParams`].
+///
+/// # Arguments
+/// * `params` - Badge parameters (see [`BadgeParams`]).
+///
+/// # Returns
+/// SVG string representing the badge.
+///
+/// # Example
+/// ```rust
+/// use shields::{BadgeParams, BadgeStyle, render_badge_svg};
+/// let params = BadgeParams {
+///     style: BadgeStyle::Flat,
+///     label: Some("build"),
+///     message: Some("passing"),
+///     label_color: Some("green"),
+///     message_color: Some("brightgreen"),
+///     link: Some("https://ci.example.com"),
+///     extra_link: None,
+///     logo: None,
+///     logo_color: None,
+/// };
+/// let svg = render_badge_svg(&params);
+/// assert!(svg.contains("passing"));
+/// ```
 pub fn render_badge_svg(params: &BadgeParams) -> String {
     render_badge(
         params.style,
