@@ -11,6 +11,7 @@ fn shields_io_url(params: &BadgeParams) -> String {
         BadgeStyle::Plastic => "plastic",
         BadgeStyle::FlatSquare => "flat-square",
         BadgeStyle::Social => "social",
+        BadgeStyle::ForTheBadge => "for-the-badge",
     };
     let url = if params.label.is_some() {
         format!(

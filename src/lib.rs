@@ -1,6 +1,5 @@
-use std::str::FromStr;
-
 use askama::{Template, filters::capitalize};
+use std::str::FromStr;
 pub mod builder;
 pub mod measurer;
 use base64::Engine;
@@ -397,6 +396,7 @@ pub enum BadgeStyle {
     FlatSquare,
     Plastic,
     Social,
+    ForTheBadge,
 }
 
 impl Default for BadgeStyle {
@@ -519,23 +519,25 @@ fn render_badge(
     let has_label_color = !label_color.unwrap_or("").is_empty();
     let message_color = message_color.unwrap_or(default_message_color());
     let message_color = to_svg_color(message_color).unwrap_or("#007ec6".to_string());
-    let mut label_color = label_color.unwrap_or("");
 
-    // 参数: BadgeParams { style: Base(Flat), label: None    , message: "message", label_color: Some(""), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some(""), logo_color: None }
-    // 参数: BadgeParams { style: Base(Flat), label: Some(""), message: "message", label_color: Some(""), message_color: "#4c1", link: Some(""), extra_link: None, logo: Some(""), logo_color: None }
-    if label.unwrap_or("").is_empty() && label_color.is_empty() {
-        if has_logo {
-            label_color = "#555";
-        } else {
-            label_color = message_color.as_str();
-        }
-    }
+    let label_color = match (
+        label.unwrap_or("").is_empty(),
+        label_color.unwrap_or("").is_empty(),
+    ) {
+        (true, true) if has_logo => "#555",
+        (true, true) => message_color.as_str(),
+        (_, _) => label_color.unwrap_or(default_label_color()),
+    };
 
     let binding = to_svg_color(label_color).unwrap_or("#555".to_string());
     let label_color = binding.as_str();
 
     let message_color = message_color.as_str();
     let message = message.unwrap_or("");
+    let link = link.unwrap_or("");
+    let extra_link_not_empty_str = extra_link.is_none() || !extra_link.unwrap().is_empty();
+    let extra_link = extra_link.unwrap_or("");
+    let logo = logo.as_str();
     match style {
         BadgeStyle::Flat => {
             let accessible_text = create_accessible_text(label, message);
@@ -610,16 +612,13 @@ fn render_badge(
                 colors_for_background(hex_message_color);
             let rect_offset = if has_logo { 19 } else { 0 };
 
-            let message_link_x = if has_logo
-                && !has_label
-                && (extra_link.is_none() || !extra_link.unwrap().is_empty())
-            {
+            let message_link_x = if has_logo && !has_label && extra_link_not_empty_str {
                 total_logo_width as i32 + HORIZONTAL_PADDING as i32
             } else {
                 left_width
             };
 
-            let has_extra_link = !extra_link.unwrap_or("").is_empty();
+            let has_extra_link = !extra_link.is_empty();
             let message_x = 10.0
                 * (message_margin as f32
                     + (0.5 * message_width as f32)
@@ -659,9 +658,9 @@ fn render_badge(
                 message_width_scaled: message_width_scaled as i32,
                 message,
 
-                link: link.unwrap_or(""),
-                extra_link: extra_link.unwrap_or(""),
-                logo: logo.as_str(),
+                link: link,
+                extra_link: extra_link,
+                logo: logo,
 
                 rect_offset,
                 message_link_x,
@@ -741,16 +740,13 @@ fn render_badge(
             let (message_text_color, _) = colors_for_background(hex_message_color);
             let rect_offset = if has_logo { 19 } else { 0 };
 
-            let message_link_x = if has_logo
-                && !has_label
-                && (extra_link.is_none() || !extra_link.unwrap().is_empty())
-            {
+            let message_link_x = if has_logo && !has_label && extra_link_not_empty_str {
                 total_logo_width as i32 + HORIZONTAL_PADDING as i32
             } else {
                 left_width
             };
 
-            let has_extra_link = !extra_link.unwrap_or("").is_empty();
+            let has_extra_link = !extra_link.is_empty();
             let message_x = 10.0
                 * (message_margin as f32
                     + (0.5 * message_width as f32)
@@ -781,9 +777,9 @@ fn render_badge(
                 message_text_color,
                 message_width_scaled: message_width_scaled as i32,
                 message,
-                link: link.unwrap_or(""),
-                extra_link: extra_link.unwrap_or(""),
-                logo: logo.as_str(),
+                link: link,
+                extra_link: extra_link,
+                logo: logo,
                 rect_offset,
                 message_link_x,
             }
@@ -863,16 +859,13 @@ fn render_badge(
                 colors_for_background(hex_message_color);
             let rect_offset = if has_logo { 19 } else { 0 };
 
-            let message_link_x = if has_logo
-                && !has_label
-                && (extra_link.is_none() || !extra_link.unwrap().is_empty())
-            {
+            let message_link_x = if has_logo && !has_label && extra_link_not_empty_str {
                 total_logo_width as i32 + HORIZONTAL_PADDING as i32
             } else {
                 left_width
             };
 
-            let has_extra_link = !extra_link.unwrap_or("").is_empty();
+            let has_extra_link = !extra_link.is_empty();
             let message_x = 10.0
                 * (message_margin as f32
                     + (0.5 * message_width as f32)
@@ -902,9 +895,9 @@ fn render_badge(
                 message_shadow_color,
                 label_color,
                 message_color,
-                link: link.unwrap_or(""),
-                extra_link: extra_link.unwrap_or(""),
-                logo: logo.as_str(),
+                link: link,
+                extra_link: extra_link,
+                logo: logo,
                 rect_offset,
                 message_link_x,
             }
@@ -978,12 +971,79 @@ fn render_badge(
                 message_text_x,
                 message_text_length,
                 label_rect_width,
-                link: link.unwrap_or(""),
-                extra_link: extra_link.unwrap_or(""),
-                logo: logo.as_str(),
+                link: link,
+                extra_link: extra_link,
+                logo: logo,
             }
             .render()
             .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
+        }
+        BadgeStyle::ForTheBadge => {
+            // label to uppercase
+            let label = label.unwrap_or("").to_uppercase();
+            let message = message.to_uppercase();
+            let out_label_color = label_color;
+            let font_size = 10;
+            let letter_spacing = 1.25;
+            let logo_text_gutter = 6i32;
+            let logo_margin = 9i32;
+            let logo_width = logo_width as i32;
+            let label_text_width = if !label.is_empty() {
+                get_text_width(&label, Font::VerdanaNormal) as i32
+            } else {
+                0
+            };
+            let message_text_width = if !message.is_empty() {
+                get_text_width(&message, Font::VerdanaNormal) as i32
+            } else {
+                0
+            };
+            let has_label = !label.is_empty();
+            let no_text = !has_label && message.is_empty();
+            let need_label_rect = has_label || (!logo.is_empty() && !label_color.is_empty());
+            //   const gutter = noText ? LOGO_TEXT_GUTTER - LOGO_MARGIN : LOGO_TEXT_GUTTER
+            let gutter = if no_text {
+                logo_text_gutter - logo_margin
+            } else {
+                logo_text_gutter
+            };
+            let text_margin = 10;
+
+            // Logo positioning
+            let (logo_min_x, label_text_min_x) = if !logo.is_empty() {
+                (logo_margin, logo_margin + logo_width + gutter)
+            } else {
+                (0, text_margin)
+            };
+
+            // Handle label and message rectangles
+            let (label_rect_width, message_text_min_x, message_rect_width) = if need_label_rect {
+                if has_label {
+                    (
+                        label_text_min_x + label_text_width + text_margin,
+                        label_text_min_x + label_text_width + text_margin + text_margin,
+                        2 * text_margin + message_text_width,
+                    )
+                } else {
+                    (
+                        2 * logo_margin + logo_width,
+                        2 * logo_margin + logo_width + text_margin,
+                        2 * text_margin + message_text_width,
+                    )
+                }
+            } else {
+                if !logo.is_empty() {
+                    (
+                        0,
+                        text_margin + logo_width + gutter,
+                        2 * text_margin + logo_width + gutter + message_text_width,
+                    )
+                } else {
+                    (0, text_margin, 2 * text_margin + message_text_width)
+                }
+            };
+
+            "<!-- ForTheBadge style is not implemented yet -->".to_string()
         }
     }
 }
