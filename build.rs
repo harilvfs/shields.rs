@@ -26,6 +26,7 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
+// Minify SVG content by trimming lines, joining whitespace, and removing unnecessary spaces
 fn minify_svg(content: &str) -> String {
     let min_content = content.lines().map(str::trim).collect::<String>();
     let min_content = min_content.split_whitespace().collect::<Vec<_>>().join(" ");
