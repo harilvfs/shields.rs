@@ -214,11 +214,36 @@ impl<'a> BadgeBuilder<'a> {
     }
 }
 
-/// Badge builder entry point
-// This struct is now just a namespace, does not hold any data
+/// Entry point for badge builder API.
+///
+/// This struct acts as a namespace for the builder pattern.
+/// Use [`Badge::style`] to start building a badge.
+///
+/// # Example
+/// ```rust
+/// use shields::{Badge, BadgeStyle};
+/// let svg = Badge::style(BadgeStyle::Flat)
+///     .label("build")
+///     .message("passing")
+///     .build();
+/// assert!(svg.contains("passing"));
+/// ```
 pub struct Badge;
 
 impl Badge {
+    /// Creates a new [`BadgeBuilder`] with the specified style.
+    ///
+    /// # Arguments
+    /// * `style` - The badge style to use.
+    ///
+    /// # Returns
+    /// A [`BadgeBuilder`] for further configuration.
+    ///
+    /// # Example
+    /// ```
+    /// use shields::{Badge, BadgeStyle};
+    /// let builder = Badge::style(BadgeStyle::Flat);
+    /// ```
     pub fn style(style: BadgeStyle) -> BadgeBuilder<'static> {
         BadgeBuilder::new(style)
     }
@@ -274,40 +299,5 @@ mod tests {
         let resp = badge.build();
         assert!(resp.contains("no chaining"));
         assert!(resp.contains("test"));
-    }
-}
-
-/// Entry point for badge builder API.
-///
-/// This struct acts as a namespace for the builder pattern.
-/// Use [`Badge::style`] to start building a badge.
-///
-/// # Example
-/// ```rust
-/// use shields::{Badge, BadgeStyle};
-/// let svg = Badge::style(BadgeStyle::Flat)
-///     .label("build")
-///     .message("passing")
-///     .build();
-/// assert!(svg.contains("passing"));
-/// ```
-pub struct Badge;
-
-impl Badge {
-    /// Creates a new [`BadgeBuilder`] with the specified style.
-    ///
-    /// # Arguments
-    /// * `style` - The badge style to use.
-    ///
-    /// # Returns
-    /// A [`BadgeBuilder`] for further configuration.
-    ///
-    /// # Example
-    /// ```
-    /// use shields::{Badge, BadgeStyle};
-    /// let builder = Badge::style(BadgeStyle::Flat);
-    /// ```
-    pub fn style(style: BadgeStyle) -> BadgeBuilder<'static> {
-        BadgeBuilder::new(style)
     }
 }
