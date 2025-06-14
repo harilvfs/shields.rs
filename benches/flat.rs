@@ -11,12 +11,23 @@ fn random_string() -> String {
         .collect()
 }
 
+fn random_style() -> BadgeStyle {
+    let styles = [
+        BadgeStyle::Flat,
+        BadgeStyle::Plastic,
+        BadgeStyle::ForTheBadge,
+        BadgeStyle::Social,
+    ];
+    let index = rand::rng().random_range(0..styles.len());
+    styles[index]
+}
+
 fn bench_flat_badge(c: &mut Criterion) {
     c.bench_function("render_flat_badge_svg", |b| {
         b.iter(|| {
             let binding = random_string();
             let params = BadgeParams {
-                style: BadgeStyle::Flat,
+                style: random_style(),
                 label: Some(binding.as_str()),
                 message: Some(binding.as_str()),
                 label_color: Some("#555"),
