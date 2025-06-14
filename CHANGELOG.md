@@ -1,6 +1,32 @@
-## HEAD
+## v0.7.0
 
-[v0.5.1...HEAD](https://github.com/Jannchie/shields.rs/compare/v0.5.1...HEAD)
+[v0.6.0...v0.7.0](https://github.com/Jannchie/shields.rs/compare/v0.6.0...v0.7.0)
+
+### :rocket: Breaking Changes
+
+- **badge-params**: make message and message_color optional in badgeparams && update usages - By [Jianqi Pan](mailto:jannchie@gmail.com) in [3c0f94d](https://github.com/Jannchie/shields.rs/commit/3c0f94d)
+
+### :sparkles: Features
+
+- **badge-style**: add forthebadge style variant and initial logic - By [Jianqi Pan](mailto:jannchie@gmail.com) in [b57c851](https://github.com/Jannchie/shields.rs/commit/b57c851)
+- **bench**: add random badge style to benchmarks - By [Jianqi Pan](mailto:jannchie@gmail.com) in [5c34b7f](https://github.com/Jannchie/shields.rs/commit/5c34b7f)
+- **for-the-badge**: add for-the-badge style svg rendering && metrics for verdana 10px normal/bold - By [Jianqi Pan](mailto:jannchie@gmail.com) in [40a6d9b](https://github.com/Jannchie/shields.rs/commit/40a6d9b)
+
+### :wrench: Chores
+
+- **deps**: update dependencies and lock file - By [Jianqi Pan](mailto:jannchie@gmail.com) in [53bf5b0](https://github.com/Jannchie/shields.rs/commit/53bf5b0)
+
+## v0.6.0
+
+[v0.5.1...v0.6.0](https://github.com/Jannchie/shields.rs/compare/v0.5.1...v0.6.0)
+
+### :rocket: Breaking Changes
+
+- **badge-style**: flatten badge style enum && remove basebadgestyle - By [Jianqi Pan](mailto:jannchie@gmail.com) in [c0c472f](https://github.com/Jannchie/shields.rs/commit/c0c472f)
+
+### :memo: Documentation
+
+- **changelog**: update changelog with v0.5.1 release notes - By [Jianqi Pan](mailto:jannchie@gmail.com) in [56ba606](https://github.com/Jannchie/shields.rs/commit/56ba606)
 
 ### :wrench: Chores
 
