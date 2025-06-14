@@ -1436,7 +1436,7 @@ dependencies = [
 
 [[package]]
 name = "shields"
-version = "0.8.1"
+version = "0.8.2"
 dependencies = [
  "askama",
  "base64",
