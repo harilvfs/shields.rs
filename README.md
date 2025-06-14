@@ -26,36 +26,29 @@ We support all major badge styles: `flat`, `flat-square`, `plastic`, `social` an
 The library provides a chainable API for customizing badges. You can set the label, message, color, and other properties using method chaining:
 
 ```rust
-use shields::Badge;
+use shields::builder::Badge;
 
 fn main() {
-    let svg = Badge::flat()
-        .set_label("build")
-        .set_message("passing")
-        .render();
-    std::fs::write("badge.svg", svg).unwrap();
-}
-```
-
-### Advanced Example
-
-A more comprehensive example demonstrating advanced customization:
-
-```rust
-use shields::Badge;
-
-fn main() {
-    let svg = Badge::plastic()
-        .set_label("coverage")
-        .set_message("98%")
-        .set_color("#4c1")
-        .set_label_color("#555")
-        .set_logo("github")
-        .set_logo_color("white")
-        .set_logo_width(18)
-        .set_link("https://docs.rs/shields")
-        .render();
-    std::fs::write("badge-advanced.svg", svg).unwrap();
+    // Simple flat badge
+    let badge = Badge::flat().label("test").message("passing").build();
+    println!("{}", badge);
+    // Flat badge with custom colors
+    let badge = Badge::plastic()
+        .label("version")
+        .message("1.0.0")
+        .label_color("#555")
+        .message_color("#4c1")
+        .build();
+    println!("{}", badge);
+    // Plastic badge with logo
+    let badge = Badge::social()
+        .label("github")
+        .message("stars")
+        .logo("github")
+        .link("https://github.com/user/repo")
+        .extra_link("https://github.com/user/repo/stargazers")
+        .build();
+    println!("{}", badge);
 }
 ```
 
