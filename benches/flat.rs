@@ -22,8 +22,9 @@ fn random_style() -> BadgeStyle {
     styles[index]
 }
 
-fn bench_flat_badge(c: &mut Criterion) {
-    c.bench_function("render_flat_badge_svg", |b| {
+// A. Traditional parameter struct
+fn bench_params_badge(c: &mut Criterion) {
+    c.bench_function("params_badge_svg", |b| {
         b.iter(|| {
             let binding = random_string();
             let params = BadgeParams {
@@ -34,13 +35,30 @@ fn bench_flat_badge(c: &mut Criterion) {
                 message_color: Some("#4c1"),
                 link: None,
                 extra_link: None,
-                logo: None,
-                logo_color: None,
+                logo: Some("rust"),
+                logo_color: Some("#FFF"),
             };
             let _svg = render_badge_svg(&params);
         });
     });
 }
 
-criterion_group!(benches, bench_flat_badge);
+// B. Builder pattern
+fn bench_builder_badge(c: &mut Criterion) {
+    c.bench_function("builder_badge_svg", |b| {
+        b.iter(|| {
+            let binding = random_string();
+            let _svg = shields::builder::Badge::style(random_style())
+                .label(&binding)
+                .message(&binding)
+                .label_color("#555")
+                .message_color("#4c1")
+                .logo("rust")
+                .logo_color("#FFF")
+                .build();
+        });
+    });
+}
+
+criterion_group!(benches, bench_params_badge, bench_builder_badge);
 criterion_main!(benches);

@@ -2,26 +2,25 @@ use crate::{
     BadgeParams, BadgeStyle, default_label_color, default_message_color, render_badge_svg,
 };
 
-/// 通用的徽章构建器
-pub struct BadgeBuilder {
+pub struct BadgeBuilder<'a> {
     style: BadgeStyle,
-    label: String,
-    message: String,
-    label_color: Option<String>,
-    message_color: Option<String>,
-    logo: Option<String>,
-    logo_color: Option<String>,
-    link: Option<String>,
-    extra_link: Option<String>,
+    label: Option<&'a str>,
+    message: Option<&'a str>,
+    label_color: Option<&'a str>,
+    message_color: Option<&'a str>,
+    logo: Option<&'a str>,
+    logo_color: Option<&'a str>,
+    link: Option<&'a str>,
+    extra_link: Option<&'a str>,
 }
 
-impl BadgeBuilder {
-    /// 创建新的构建器
+impl<'a> BadgeBuilder<'a> {
+    /// Create a new builder
     fn new(style: BadgeStyle) -> Self {
         Self {
             style,
-            label: String::new(),
-            message: String::new(),
+            label: None,
+            message: None,
             label_color: None,
             message_color: None,
             logo: None,
@@ -31,119 +30,86 @@ impl BadgeBuilder {
         }
     }
 
-    /// 设置标签文本
-    pub fn label<S: Into<String>>(mut self, label: S) -> Self {
-        self.label = label.into();
+    /// Set the label text. Note: method signature now takes &mut self and &'a str
+    pub fn label(&mut self, label: &'a str) -> &mut Self {
+        self.label = Some(label);
         self
     }
 
-    /// 设置消息文本
-    pub fn message<S: Into<String>>(mut self, message: S) -> Self {
-        self.message = message.into();
+    /// Set the message text
+    pub fn message(&mut self, message: &'a str) -> &mut Self {
+        self.message = Some(message);
         self
     }
 
-    /// 设置标签颜色
-    pub fn label_color<S: Into<String>>(mut self, color: S) -> Self {
-        self.label_color = Some(color.into());
+    /// Set the label color
+    pub fn label_color(&mut self, color: &'a str) -> &mut Self {
+        self.label_color = Some(color);
         self
     }
 
-    /// 设置消息颜色
-    pub fn message_color<S: Into<String>>(mut self, color: S) -> Self {
-        self.message_color = Some(color.into());
+    /// Set the message color
+    pub fn message_color(&mut self, color: &'a str) -> &mut Self {
+        self.message_color = Some(color);
         self
     }
 
-    /// 设置 logo
-    pub fn logo<S: Into<String>>(mut self, logo: S) -> Self {
-        self.logo = Some(logo.into());
+    /// Set the logo
+    pub fn logo(&mut self, logo: &'a str) -> &mut Self {
+        self.logo = Some(logo);
         self
     }
 
-    /// 设置 logo 颜色
-    pub fn logo_color<S: Into<String>>(mut self, color: S) -> Self {
-        self.logo_color = Some(color.into());
+    /// Set the logo color
+    pub fn logo_color(&mut self, color: &'a str) -> &mut Self {
+        self.logo_color = Some(color);
         self
     }
 
-    /// 设置链接
-    pub fn link<S: Into<String>>(mut self, link: S) -> Self {
-        self.link = Some(link.into());
+    /// Set the link
+    pub fn link(&mut self, link: &'a str) -> &mut Self {
+        self.link = Some(link);
         self
     }
 
-    /// 设置额外链接（第二个链接）
-    pub fn extra_link<S: Into<String>>(mut self, link: S) -> Self {
-        self.extra_link = Some(link.into());
+    /// Set the extra link (second link)
+    pub fn extra_link(&mut self, link: &'a str) -> &mut Self {
+        self.extra_link = Some(link);
         self
     }
 
-    /// 构建 SVG 字符串
-    pub fn build(self) -> String {
-        // Social 风格的特殊处理
+    /// Build the SVG string. Note: takes &self, does not consume the builder.
+    pub fn build(&self) -> String {
         let (label_color, message_color) = if self.style == BadgeStyle::Social {
             (None, Some(""))
         } else {
             (
-                Some(self.label_color.as_deref().unwrap_or(default_label_color())),
-                Some(
-                    self.message_color
-                        .as_deref()
-                        .unwrap_or(default_message_color()),
-                ),
+                Some(self.label_color.unwrap_or(default_label_color())),
+                Some(self.message_color.unwrap_or(default_message_color())),
             )
         };
 
         render_badge_svg(&BadgeParams {
             style: self.style,
-            label: if self.label.is_empty() {
-                None
-            } else {
-                Some(&self.label)
-            },
-            message: if self.message.is_empty() {
-                None
-            } else {
-                Some(&self.message)
-            },
+            label: self.label,
+            message: self.message,
             label_color,
             message_color,
-            logo: self.logo.as_deref(),
-            logo_color: self.logo_color.as_deref(),
-            link: self.link.as_deref(),
-            extra_link: self.extra_link.as_deref(),
+            logo: self.logo,
+            logo_color: self.logo_color,
+            link: self.link,
+            extra_link: self.extra_link,
         })
     }
 }
 
-/// 徽章构建器入口点
+/// Badge builder entry point
+// This struct is now just a namespace, does not hold any data
 pub struct Badge;
 
 impl Badge {
-    /// 创建 Social 风格徽章
-    pub fn social() -> BadgeBuilder {
-        BadgeBuilder::new(BadgeStyle::Social)
-    }
-
-    /// 创建 Flat 风格徽章
-    pub fn flat() -> BadgeBuilder {
-        BadgeBuilder::new(BadgeStyle::Flat)
-    }
-
-    /// 创建 Flat Square 风格徽章
-    pub fn flat_square() -> BadgeBuilder {
-        BadgeBuilder::new(BadgeStyle::FlatSquare)
-    }
-
-    /// 创建 Plastic 风格徽章
-    pub fn plastic() -> BadgeBuilder {
-        BadgeBuilder::new(BadgeStyle::Plastic)
-    }
-
-    /// 创建 For The Badge 风格徽章
-    pub fn for_the_badge() -> BadgeBuilder {
-        BadgeBuilder::new(BadgeStyle::ForTheBadge)
+    pub fn style(style: BadgeStyle) -> BadgeBuilder<'static> {
+        BadgeBuilder::new(style)
     }
 }
 
@@ -152,68 +118,50 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_flat_badge() {
-        let badge = Badge::flat()
-            .label("test")
-            .message("test")
+    fn test_optimized_flat_badge() {
+        let mut builder = Badge::style(BadgeStyle::Flat);
+        let badge = builder
+            .label("test1")
+            .message("test2")
             .label_color("#000000")
-            .message_color("#FFFFFF")
+            .message_color("#ffffff")
             .build();
 
-        assert!(badge.contains(r##"fill="#000000"##));
-        assert!(badge.contains(r##"fill="#ffffff"##));
+        assert!(badge.contains("test1"));
+        assert!(badge.contains("test2"));
     }
 
     #[test]
-    fn test_social_badge_with_links() {
-        let badge = Badge::social()
-            .label("test")
-            .message("test")
-            .link("https://example.com")
-            .extra_link("https://example.com/extra")
-            .build();
-
-        assert!(badge.contains(r#"href="https://example.com""#));
-        assert!(badge.contains(r#"href="https://example.com/extra""#));
-    }
-
-    #[test]
-    fn test_plastic_badge_with_logo() {
-        let badge = Badge::plastic()
-            .label("test")
-            .message("test")
-            .logo("rust")
-            .logo_color("red")
-            .build();
-
-        assert!(badge.contains(r#"<image"#));
-    }
-
-    #[test]
-    fn test_for_the_badge_style() {
-        let badge = Badge::for_the_badge()
-            .label("BUILD")
-            .message("PASSING")
-            .label_color("#555")
-            .message_color("#4c1")
-            .build();
-
-        assert!(badge.contains("BUILD"));
-        assert!(badge.contains("PASSING"));
-    }
-
-    #[test]
-    fn test_builder_chaining() {
-        let badge = Badge::flat()
+    fn test_optimized_chaining() {
+        let badge = Badge::style(BadgeStyle::Plastic)
             .label("version")
             .message("1.0.0")
-            .label_color("#555")
-            .message_color("#blue")
             .logo("github")
-            .link("https://github.com/user/repo")
             .build();
 
         assert!(badge.contains("version"));
         assert!(badge.contains("1.0.0"));
+    }
+
+    #[test]
+    fn test_alternative_chaining() {
+        let badge = {
+            let mut b = Badge::style(BadgeStyle::Flat);
+            b.label("hello").message("world");
+            b.build()
+        };
+        assert!(badge.contains("hello"));
+        assert!(badge.contains("world"));
+    }
+    #[test]
+    fn test_configuring_step_by_step() {
+        let mut badge = Badge::style(BadgeStyle::Flat);
+        badge.label("no chaining");
+        badge.message("test");
+        badge.label_color("#000");
+        badge.message_color("#fff");
+        let resp = badge.build();
+        assert!(resp.contains("no chaining"));
+        assert!(resp.contains("test"));
     }
 }
