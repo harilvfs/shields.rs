@@ -1,5 +1,12 @@
 # shields.rs
 
+![Crates.io Version](https://img.shields.io/crates/v/shields)
+![Deps.rs Crate Dependencies (latest)](https://img.shields.io/deps-rs/shields/latest)
+![Crates.io License](https://img.shields.io/crates/l/shields)
+![Crates.io Size](https://img.shields.io/crates/size/shields)
+![Crates.io Downloads (recent)](https://img.shields.io/crates/dr/shields)
+![Crates.io Total Downloads](https://img.shields.io/crates/d/shields)
+
 A high-performance badge rendering engine written in Rust, supporting SVG output and font parsing. This project is designed for developers and services that require fast, customizable, and reliable badge generation.
 
 **🎯 Pixel-Perfect Consistency with shields.io**
