@@ -1,20 +1,20 @@
- //! Font character width measurer for SVG badge rendering.
- //!
- //! This module provides [`CharWidthMeasurer`], a utility for loading and consuming font width tables
- //! (from JSON or string), and for calculating the width of strings in a given font. It is equivalent
- //! to the JS CharWidthTableConsumer used in shields.io, and is used internally for accurate badge layout.
- //!
- //! # Typical Usage
- //!
- //! ```rust
- //! use shields::measurer::CharWidthMeasurer;
- //! let data = vec![(65, 90, 10.0), (97, 122, 8.0)]; // A-Z width 10, a-z width 8
- //! let measurer = CharWidthMeasurer::from_data(data);
- //! let width = measurer.width_of("Hello", true);
- //! assert!(width > 0.0);
- //! ```
- //!
- //! See [`CharWidthMeasurer`] for details.
+//! Font character width measurer for SVG badge rendering.
+//!
+//! This module provides [`CharWidthMeasurer`], a utility for loading and consuming font width tables
+//! (from JSON or string), and for calculating the width of strings in a given font. It is equivalent
+//! to the JS CharWidthTableConsumer used in shields.io, and is used internally for accurate badge layout.
+//!
+//! # Typical Usage
+//!
+//! ```rust
+//! use shields::measurer::CharWidthMeasurer;
+//! let data = vec![(65, 90, 10.0), (97, 122, 8.0)]; // A-Z width 10, a-z width 8
+//! let measurer = CharWidthMeasurer::from_data(data);
+//! let width = measurer.width_of("Hello", true);
+//! assert!(width > 0.0);
+//! ```
+//!
+//! See [`CharWidthMeasurer`] for details.
 
 use serde_json::Value;
 use std::collections::HashMap;
@@ -27,7 +27,7 @@ use std::io::{self};
 /// to look up the width of individual characters or entire strings. Used internally for accurate
 /// badge rendering.
 ///
-/// # Example
+/// ## Example
 /// ```rust
 /// use shields::measurer::CharWidthMeasurer;
 /// let data = vec![(65, 90, 10.0), (97, 122, 8.0)];
@@ -64,7 +64,7 @@ impl CharWidthMeasurer {
     /// # Returns
     /// A new [`CharWidthMeasurer`].
     ///
-    /// # Example
+    /// ## Example
     /// ```
     /// use shields::measurer::CharWidthMeasurer;
     /// let data = vec![(65, 90, 10.0), (97, 122, 8.0)];
@@ -166,7 +166,7 @@ impl CharWidthMeasurer {
     /// # Returns
     /// Some(width) if found, or None.
     ///
-    /// # Example
+    /// ## Example
     /// ```
     /// use shields::measurer::CharWidthMeasurer;
     /// let data = vec![(65, 90, 10.0)];
@@ -196,7 +196,7 @@ impl CharWidthMeasurer {
     /// # Panics
     /// If `guess` is false and an unknown character is encountered.
     ///
-    /// # Example
+    /// ## Example
     /// ```
     /// use shields::measurer::CharWidthMeasurer;
     /// let data = vec![(65, 90, 10.0)];

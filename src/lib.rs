@@ -14,7 +14,7 @@ This crate provides flexible APIs for creating customizable status badges for CI
 - Color normalization and aliasing (e.g., "critical" → red).
 - No runtime file I/O required for badge generation.
 
-## Example
+### Example
 
 ```rust
 use shields::{BadgeStyle, BadgeParams, render_badge_svg};
@@ -37,7 +37,8 @@ assert!(svg.contains("passing"));
 Or use the builder API:
 
 ```rust
-use shields::{Badge, BadgeStyle};
+use shields::{BadgeStyle};
+use shields::builder::Badge;
 
 let svg = Badge::style(BadgeStyle::Plastic)
     .label("version")
@@ -508,7 +509,7 @@ pub(crate) fn preferred_width_of(text: &str, font: Font) -> u32 {
 /// - `Social`: Social badge style (e.g., GitHub social).
 /// - `ForTheBadge`: All-caps, bold, attention-grabbing style.
 ///
-/// # Example
+/// ## Example
 /// ```rust
 /// use shields::BadgeStyle;
 /// let style = BadgeStyle::Plastic;
@@ -554,7 +555,7 @@ pub fn default_label_color() -> &'static str {
 /// - `logo`: Optional logo name or SVG data.
 /// - `logo_color`: Optional logo color.
 ///
-/// # Example
+/// ## Example
 /// ```rust
 /// use shields::{BadgeParams, BadgeStyle, render_badge_svg};
 /// let params = BadgeParams {
@@ -592,7 +593,7 @@ pub struct BadgeParams<'a> {
 /// # Returns
 /// SVG string representing the badge.
 ///
-/// # Example
+/// ## Example
 /// ```rust
 /// use shields::{BadgeParams, BadgeStyle, render_badge_svg};
 /// let params = BadgeParams {

@@ -3,10 +3,11 @@
 //! Provides a builder-pattern API for constructing SVG badges with a fluent, ergonomic interface.
 //! This module is ideal for users who want to configure badges step-by-step or with method chaining.
 //!
-//! # Example
+//! ## Example
 //!
 //! ```rust
-//! use shields::{Badge, BadgeStyle};
+//! use shields::{BadgeStyle};
+//! use shields::builder::Badge;
 //!
 //! let svg = Badge::style(BadgeStyle::Flat)
 //!     .label("build")
@@ -28,9 +29,12 @@ use crate::{
 /// Use [`Badge::style`] to create a new builder, then chain methods to set label, message, colors, logo, and links.
 /// Call [`build`](BadgeBuilder::build) to generate the SVG string.
 ///
-/// # Example
+/// ## Example
+///
 /// ```rust
-/// use shields::{Badge, BadgeStyle};
+/// use shields::{BadgeStyle};
+/// use shields::builder::Badge;
+///
 /// let svg = Badge::style(BadgeStyle::Flat)
 ///     .label("build")
 ///     .message("passing")
@@ -81,9 +85,11 @@ impl<'a> BadgeBuilder<'a> {
     /// # Returns
     /// Mutable reference to self for chaining.
     ///
-    /// # Example
+    /// ## Example
     /// ```
-    /// use shields::{Badge, BadgeStyle};
+    /// use shields::{BadgeStyle};
+    /// use shields::builder::Badge;
+    ///
     /// let mut builder = Badge::style(BadgeStyle::Flat);
     /// builder.label("build");
     /// ```
@@ -181,9 +187,11 @@ impl<'a> BadgeBuilder<'a> {
     /// # Returns
     /// SVG string representing the badge.
     ///
-    /// # Example
+    /// ## Example
     /// ```
-    /// use shields::{Badge, BadgeStyle};
+    /// use shields::{BadgeStyle};
+    /// use shields::builder::Badge;
+    ///
     /// let svg = Badge::style(BadgeStyle::Flat)
     ///     .label("build")
     ///     .message("passing")
@@ -219,9 +227,11 @@ impl<'a> BadgeBuilder<'a> {
 /// This struct acts as a namespace for the builder pattern.
 /// Use [`Badge::style`] to start building a badge.
 ///
-/// # Example
+/// ## Example
 /// ```rust
-/// use shields::{Badge, BadgeStyle};
+/// use shields::{BadgeStyle};
+/// use shields::builder::Badge;
+///
 /// let svg = Badge::style(BadgeStyle::Flat)
 ///     .label("build")
 ///     .message("passing")
@@ -239,9 +249,11 @@ impl Badge {
     /// # Returns
     /// A [`BadgeBuilder`] for further configuration.
     ///
-    /// # Example
+    /// ## Example
     /// ```
-    /// use shields::{Badge, BadgeStyle};
+    /// use shields::{BadgeStyle};
+    /// use shields::builder::Badge;
+    ///
     /// let builder = Badge::style(BadgeStyle::Flat);
     /// ```
     pub fn style(style: BadgeStyle) -> BadgeBuilder<'static> {
