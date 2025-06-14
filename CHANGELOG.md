@@ -1,3 +1,19 @@
+## v0.8.1
+
+[v0.8.0...v0.8.1](https://github.com/Jannchie/shields.rs/compare/v0.8.0...v0.8.1)
+
+### :memo: Documentation
+
+- **badges**: add doc comments to enums and struct fields - By [Jianqi Pan](mailto:jannchie@gmail.com) in [c359b59](https://github.com/Jannchie/shields.rs/commit/c359b59)
+- **builder**: improve badge builder documentation - By [Jianqi Pan](mailto:jannchie@gmail.com) in [5fef466](https://github.com/Jannchie/shields.rs/commit/5fef466)
+- **changelog**: add changelog for v0.8.0 release - By [Jianqi Pan](mailto:jannchie@gmail.com) in [d5dcc4b](https://github.com/Jannchie/shields.rs/commit/d5dcc4b)
+- **examples**: use consistent '## Example' doc headings and update badge usage examples - By [Jianqi Pan](mailto:jannchie@gmail.com) in [828edf8](https://github.com/Jannchie/shields.rs/commit/828edf8)
+- add and enhance rustdoc comments and examples - By [Jianqi Pan](mailto:jannchie@gmail.com) in [b067692](https://github.com/Jannchie/shields.rs/commit/b067692)
+
+### :wrench: Chores
+
+- update lock file - By [Jianqi Pan](mailto:jannchie@gmail.com) in [8676437](https://github.com/Jannchie/shields.rs/commit/8676437)
+
 ## v0.8.0
 
 [v0.7.0...v0.8.0](https://github.com/Jannchie/shields.rs/compare/v0.7.0...v0.8.0)
