@@ -1,5 +1,4 @@
 use shields::{BadgeParams, BadgeStyle, render_badge_svg};
-
 use pretty_assertions::assert_eq;
 use std::fs;
 use std::io::{Read, Write};

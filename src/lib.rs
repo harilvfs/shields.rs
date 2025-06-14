@@ -128,6 +128,49 @@ struct SocialBadgeSvgTemplateContext<'a> {
     logo: &'a str,
 }
 
+/// for-the-badge SVG rendering template context
+#[derive(Template)]
+#[template(path = "for_the_badge_template.min.svg", escape = "none")]
+struct ForTheBadgeSvgTemplateContext<'a> {
+    // SVG dimensions
+    total_width: i32,
+
+    // Accessibility
+    accessible_text: &'a str,
+
+    // Layout dimensions
+    left_width: i32,
+    right_width: i32,
+
+    // Colors
+    label_color: &'a str,
+    message_color: &'a str,
+
+    // Font settings
+    font_family: &'a str,
+    font_size: i32,
+
+    // // Label (left side)
+    label: &'a str,
+    label_x: f32,
+    label_width_scaled: i32,
+    label_text_color: &'a str,
+
+    // // Message (right side)
+    message: &'a str,
+    message_x: f32,
+    message_text_color: &'a str,
+    message_width_scaled: i32,
+
+    // // Links
+    link: &'a str,
+    extra_link: &'a str,
+
+    // // Logo
+    logo: &'a str,
+    logo_x: i32,
+}
+
 // --- Color processing utility module ---
 // Supports standardization and SVG output of named colors, aliases, hex, and CSS color inputs
 
@@ -247,8 +290,10 @@ pub trait FontMetrics {
 
 #[derive(Eq, PartialEq, Hash, Clone, Debug)]
 pub enum Font {
-    VerdanaNormal,
-    HelveticaBold,
+    VerdanaNormal11,
+    HelveticaBold11,
+    VerdanaNormal10,
+    VerdanaBold10,
 }
 
 /// Calculates the width of text in Verdana 11px (in pixels)
@@ -261,24 +306,36 @@ pub fn get_text_width(text: &str, font: Font) -> f64 {
     use once_cell::sync::Lazy;
 
     // 在编译时直接将 JSON 文件内容作为字符串嵌入
-    const VERDANA_JSON_DATA: &str = include_str!("../assets/fonts/verdana-11px-normal.json");
-    const HELVETICA_JSON_DATA: &str = include_str!("../assets/fonts/helvetica-11px-bold.json");
-
-    static VERDANA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
+    const VERDANA_11_N_JSON_DATA: &str = include_str!("../assets/fonts/verdana-11px-normal.json");
+    const HELVETICA_11_B_JSON_DATA: &str = include_str!("../assets/fonts/helvetica-11px-bold.json");
+    const VERDANA_10_N_JSON_DATA: &str = include_str!("../assets/fonts/verdana-10px-normal.json");
+    const VERDANA_10_B_JSON_DATA: &str = include_str!("../assets/fonts/verdana-10px-bold.json");
+    static VERDANA_11_N_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
         // 从嵌入的字符串加载数据，而不是从文件系统
-        CharWidthMeasurer::load_from_str(VERDANA_JSON_DATA)
+        CharWidthMeasurer::load_from_str(VERDANA_11_N_JSON_DATA)
             .expect("Unable to parse Verdana 11px width table")
     });
 
-    static HELVETICA_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
+    static HELVETICA_11_B_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
         // 从嵌入的字符串加载数据
-        CharWidthMeasurer::load_from_str(HELVETICA_JSON_DATA)
+        CharWidthMeasurer::load_from_str(HELVETICA_11_B_JSON_DATA)
             .expect("Unable to parse Helvetica Bold width table")
+    });
+    static VERDANA_10_N_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
+        CharWidthMeasurer::load_from_str(VERDANA_10_N_JSON_DATA)
+            .expect("Unable to parse Verdana 10px width table")
+    });
+
+    static VERDANA_10_B_WIDTH_TABLE: Lazy<CharWidthMeasurer> = Lazy::new(|| {
+        CharWidthMeasurer::load_from_str(VERDANA_10_B_JSON_DATA)
+            .expect("Unable to parse Verdana 10px Bold width table")
     });
 
     match font {
-        Font::VerdanaNormal => VERDANA_WIDTH_TABLE.width_of(text, true),
-        Font::HelveticaBold => HELVETICA_WIDTH_TABLE.width_of(text, true),
+        Font::VerdanaNormal11 => VERDANA_11_N_WIDTH_TABLE.width_of(text, true),
+        Font::HelveticaBold11 => HELVETICA_11_B_WIDTH_TABLE.width_of(text, true),
+        Font::VerdanaNormal10 => VERDANA_10_N_WIDTH_TABLE.width_of(text, true),
+        Font::VerdanaBold10 => VERDANA_10_B_WIDTH_TABLE.width_of(text, true),
     }
 }
 macro_rules! round_up_to_odd_float {
@@ -546,7 +603,7 @@ fn render_badge(
             let label_margin = total_logo_width + 1;
 
             let label_width = if has_label && label.is_some() {
-                preferred_width_of(label.unwrap(), Font::VerdanaNormal)
+                preferred_width_of(label.unwrap(), Font::VerdanaNormal11)
             } else {
                 0
             };
@@ -563,7 +620,7 @@ fn render_badge(
                     left_width -= 1;
                 }
             }
-            let message_width = preferred_width_of(message, Font::VerdanaNormal);
+            let message_width = preferred_width_of(message, Font::VerdanaNormal11);
 
             let offset = if label.is_none() && has_logo {
                 -3 as i32
@@ -675,7 +732,7 @@ fn render_badge(
             let label_margin = total_logo_width + 1;
 
             let label_width = if has_label && label.is_some() {
-                preferred_width_of(label.unwrap(), Font::VerdanaNormal)
+                preferred_width_of(label.unwrap(), Font::VerdanaNormal11)
             } else {
                 0
             };
@@ -692,7 +749,7 @@ fn render_badge(
                     left_width -= 1;
                 }
             }
-            let message_width = preferred_width_of(message, Font::VerdanaNormal);
+            let message_width = preferred_width_of(message, Font::VerdanaNormal11);
 
             let offset = if label.is_none() && has_logo {
                 -3 as i32
@@ -793,7 +850,7 @@ fn render_badge(
             let label_margin = total_logo_width + 1;
 
             let label_width = if has_label && label.is_some() {
-                preferred_width_of(label.unwrap(), Font::VerdanaNormal)
+                preferred_width_of(label.unwrap(), Font::VerdanaNormal11)
             } else {
                 0
             };
@@ -810,7 +867,7 @@ fn render_badge(
                     left_width -= 1;
                 }
             }
-            let message_width = preferred_width_of(message, Font::VerdanaNormal);
+            let message_width = preferred_width_of(message, Font::VerdanaNormal11);
 
             let offset = if label.is_none() && has_logo {
                 -3 as i32
@@ -922,13 +979,13 @@ fn render_badge(
             let message_horizontal_padding = 4;
             let horizontal_gutter = 6;
 
-            let label_text_width = preferred_width_of(label_str, Font::HelveticaBold);
+            let label_text_width = preferred_width_of(label_str, Font::HelveticaBold11);
 
             let label_rect_width =
                 (label_text_width + total_logo_width + 2 * label_horizontal_padding) as i32
                     + offset;
 
-            let message_text_width = preferred_width_of(message, Font::HelveticaBold);
+            let message_text_width = preferred_width_of(message, Font::HelveticaBold11);
 
             let message_rect_width = message_text_width + 2 * message_horizontal_padding;
             let has_message = !message.is_empty();
@@ -981,33 +1038,34 @@ fn render_badge(
         BadgeStyle::ForTheBadge => {
             // label to uppercase
             let label = label.unwrap_or("").to_uppercase();
+            let accessible_text = create_accessible_text(Some(label.as_str()), message);
             let message = message.to_uppercase();
-            let out_label_color = label_color;
             let font_size = 10;
             let letter_spacing = 1.25;
             let logo_text_gutter = 6i32;
             let logo_margin = 9i32;
             let logo_width = logo_width as i32;
             let label_text_width = if !label.is_empty() {
-                get_text_width(&label, Font::VerdanaNormal) as i32
+                (get_text_width(&label, Font::VerdanaNormal10)
+                    + letter_spacing * label.len() as f64) as i32
             } else {
                 0
             };
             let message_text_width = if !message.is_empty() {
-                get_text_width(&message, Font::VerdanaNormal) as i32
+                (get_text_width(&message, Font::VerdanaBold10)
+                    + letter_spacing * message.len() as f64) as i32
             } else {
                 0
             };
             let has_label = !label.is_empty();
             let no_text = !has_label && message.is_empty();
             let need_label_rect = has_label || (!logo.is_empty() && !label_color.is_empty());
-            //   const gutter = noText ? LOGO_TEXT_GUTTER - LOGO_MARGIN : LOGO_TEXT_GUTTER
             let gutter = if no_text {
                 logo_text_gutter - logo_margin
             } else {
                 logo_text_gutter
             };
-            let text_margin = 10;
+            let text_margin = 12;
 
             // Logo positioning
             let (logo_min_x, label_text_min_x) = if !logo.is_empty() {
@@ -1042,16 +1100,57 @@ fn render_badge(
                     (0, text_margin, 2 * text_margin + message_text_width)
                 }
             };
+            let left_width = label_rect_width;
+            let right_width = message_rect_width;
+            let total_width = left_width + right_width;
 
-            "<!-- ForTheBadge style is not implemented yet -->".to_string()
+            let hex_label_color = Color::from_str(label_color)
+                .unwrap_or(Color::from_str("#555").unwrap())
+                .to_css_hex();
+            let hex_label_color = hex_label_color.as_str();
+            let hex_message_color = Color::from_str(message_color)
+                .unwrap_or(Color::from_str("#007ec6").unwrap())
+                .to_css_hex();
+            let hex_message_color = hex_message_color.as_str();
+
+            let message_mid_x = message_text_min_x as f32 + 0.5 * message_text_width as f32;
+            let label_mid_x = label_text_min_x as f32 + 0.5 * label_text_width as f32;
+
+            let (label_text_color, _) = colors_for_background(hex_label_color);
+            let (message_text_color, _) = colors_for_background(hex_message_color);
+
+            ForTheBadgeSvgTemplateContext {
+                total_width,
+                accessible_text: accessible_text.as_str(),
+                left_width: label_rect_width,
+                right_width: message_rect_width,
+                label_color: label_color,
+                message_color: message_color,
+                font_family: FONT_FAMILY,
+                font_size: font_size * FONT_SCALE_UP_FACTOR as i32,
+                label: label.as_str(),
+                label_x: label_mid_x * FONT_SCALE_UP_FACTOR as f32,
+                label_width_scaled: label_text_width * FONT_SCALE_UP_FACTOR as i32,
+                label_text_color: label_text_color,
+                message: message.as_str(),
+                message_x: message_mid_x * FONT_SCALE_UP_FACTOR as f32,
+                message_text_color: message_text_color,
+                message_width_scaled: message_text_width * FONT_SCALE_UP_FACTOR as i32,
+                link: link,
+                extra_link: extra_link,
+                logo: logo,
+                logo_x: logo_min_x,
+            }
+            .render()
+            .unwrap_or_else(|e| format!("<!-- Askama render error: {} -->", e))
         }
     }
 }
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
     use csscolorparser::Color;
+    use pretty_assertions::assert_eq;
+    use std::str::FromStr;
 
     use super::*;
     #[test]
@@ -1070,6 +1169,32 @@ mod tests {
         };
         let svg = render_badge_svg(&params);
         assert!(!svg.is_empty(), "SVG rendering failed");
+    }
+
+    #[test]
+    fn text_for_the_badge() {
+        // Test ForTheBadge style rendering
+        let params = BadgeParams {
+            style: BadgeStyle::ForTheBadge,
+            label: Some("building"),
+            message: Some("pass"),
+            label_color: Some("#555"),
+            message_color: Some("#fff"),
+            link: Some("https://google.com"),
+            extra_link: Some("https://example.com"),
+            logo: Some("rust"),
+            logo_color: Some("blue"),
+        };
+        let svg = render_badge_svg(&params);
+        println!("{}", svg);
+        let expected = r##"<svg xmlns="http://www.w3.org/2000/svg" width="160" height="28"><g shape-rendering="crispEdges"><rect width="102" height="28" fill="#555"/><rect x="102" width="58" height="28" fill="#fff"/></g><g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="100"><image x="9" y="7" width="14" height="14" href="data:image/svg+xml;base64,PHN2ZyBmaWxsPSIjMDA3ZWM2IiByb2xlPSJpbWciIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48dGl0bGU+UnVzdDwvdGl0bGU+PHBhdGggZD0iTTIzLjgzNDYgMTEuNzAzM2wtMS4wMDczLS42MjM2YTEzLjcyNjggMTMuNzI2OCAwIDAwLS4wMjgzLS4yOTM2bC44NjU2LS44MDY5YS4zNDgzLjM0ODMgMCAwMC0uMTE1NC0uNTc4bC0xLjEwNjYtLjQxNGE4LjQ5NTggOC40OTU4IDAgMDAtLjA4Ny0uMjg1NmwuNjkwNC0uOTU4N2EuMzQ2Mi4zNDYyIDAgMDAtLjIyNTctLjU0NDZsLTEuMTY2My0uMTg5NGE5LjM1NzQgOS4zNTc0IDAgMDAtLjE0MDctLjI2MjJsLjQ5LTEuMDc2MWEuMzQzNy4zNDM3IDAgMDAtLjAyNzQtLjMzNjEuMzQ4Ni4zNDg2IDAgMDAtLjMwMDYtLjE1NGwtMS4xODQ1LjA0MTZhNi43NDQ0IDYuNzQ0NCAwIDAwLS4xODczLS4yMjY4bC4yNzIzLTEuMTUzYS4zNDcyLjM0NzIgMCAwMC0uNDE3LS40MTcybC0xLjE1MzIuMjcyNGExNC4wMTgzIDE0LjAxODMgMCAwMC0uMjI3OC0uMTg3M2wuMDQxNS0xLjE4NDVhLjM0NDIuMzQ0MiAwIDAwLS40OS0uMzI4bC0xLjA3Ni40OTFjLS4wODcyLS4wNDc2LS4xNzQyLS4wOTUyLS4yNjIzLS4xNDA3bC0uMTkwMy0xLjE2NzNBLjM0ODMuMzQ4MyAwIDAwMTYuMjU2Ljk1NWwtLjk1OTcuNjkwNWE4LjQ4NjcgOC40ODY3IDAgMDAtLjI4NTUtLjA4NmwtLjQxNC0xLjEwNjZhLjM0ODMuMzQ4MyAwIDAwLS41NzgxLS4xMTU0bC0uODA2OS44NjY2YTkuMjkzNiA5LjI5MzYgMCAwMC0uMjkzNi0uMDI4NEwxMi4yOTQ2LjE2ODNhLjM0NjIuMzQ2MiAwIDAwLS41ODkyIDBsLS42MjM2IDEuMDA3M2ExMy43MzgzIDEzLjczODMgMCAwMC0uMjkzNi4wMjg0TDkuOTgwMy4zMzc0YS4zNDYyLjM0NjIgMCAwMC0uNTc4LjExNTRsLS40MTQxIDEuMTA2NWMtLjA5NjIuMDI3NC0uMTkwMy4wNTY3LS4yODU1LjA4Nkw3Ljc0NC45NTVhLjM0ODMuMzQ4MyAwIDAwLS41NDQ3LjIyNThMNy4wMDkgMi4zNDhhOS4zNTc0IDkuMzU3NCAwIDAwLS4yNjIyLjE0MDdsLTEuMDc2Mi0uNDkxYS4zNDYyLjM0NjIgMCAwMC0uNDkuMzI4bC4wNDE2IDEuMTg0NWE3Ljk4MjYgNy45ODI2IDAgMDAtLjIyNzguMTg3M0wzLjg0MTMgMy40MjVhLjM0NzIuMzQ3MiAwIDAwLS40MTcxLjQxNzFsLjI3MTMgMS4xNTMxYy0uMDYyOC4wNzUtLjEyNTUuMTUwOS0uMTg2My4yMjY4bC0xLjE4NDUtLjA0MTVhLjM0NjIuMzQ2MiAwIDAwLS4zMjguNDlsLjQ5MSAxLjA3NjFhOS4xNjcgOS4xNjcgMCAwMC0uMTQwNy4yNjIybC0xLjE2NjIuMTg5NGEuMzQ4My4zNDgzIDAgMDAtLjIyNTguNTQ0NmwuNjkwNC45NTg3YTEzLjMwMyAxMy4zMDMgMCAwMC0uMDg3LjI4NTVsLTEuMTA2NS40MTRhLjM0ODMuMzQ4MyAwIDAwLS4xMTU1LjU3ODFsLjg2NTYuODA3YTkuMjkzNiA5LjI5MzYgMCAwMC0uMDI4My4yOTM1bC0xLjAwNzMuNjIzNmEuMzQ0Mi4zNDQyIDAgMDAwIC41ODkybDEuMDA3My42MjM2Yy4wMDguMDk4Mi4wMTgyLjE5NjQuMDI4My4yOTM2bC0uODY1Ni44MDc5YS4zNDYyLjM0NjIgMCAwMC4xMTU1LjU3OGwxLjEwNjUuNDE0MWMuMDI3My4wOTYyLjA1NjcuMTkxNC4wODcuMjg1NWwtLjY5MDQuOTU4N2EuMzQ1Mi4zNDUyIDAgMDAuMjI2OC41NDQ3bDEuMTY2Mi4xODkzYy4wNDU2LjA4OC4wOTIyLjE3NTEuMTQwOC4yNjIybC0uNDkxIDEuMDc2MmEuMzQ2Mi4zNDYyIDAgMDAuMzI4LjQ5bDEuMTgzNC0uMDQxNWMuMDYxOC4wNzY5LjEyMzUuMTUyOC4xODczLjIyNzdsLS4yNzEzIDEuMTU0MWEuMzQ2Mi4zNDYyIDAgMDAuNDE3MS40MTYxbDEuMTUzLS4yNzEzYy4wNzUuMDYzOC4xNTEuMTI1NS4yMjc5LjE4NjNsLS4wNDE1IDEuMTg0NWEuMzQ0Mi4zNDQyIDAgMDAuNDkuMzI3bDEuMDc2MS0uNDljLjA4Ny4wNDg2LjE3NDEuMDk1MS4yNjIyLjE0MDdsLjE5MDMgMS4xNjYyYS4zNDgzLjM0ODMgMCAwMC41NDQ3LjIyNjhsLjk1ODctLjY5MDRhOS4yOTkgOS4yOTkgMCAwMC4yODU1LjA4N2wuNDE0IDEuMTA2NmEuMzQ1Mi4zNDUyIDAgMDAuNTc4MS4xMTU0bC44MDc5LS44NjU2Yy4wOTcyLjAxMTEuMTk1NC4wMjAzLjI5MzYuMDI5NGwuNjIzNiAxLjAwNzNhLjM0NzIuMzQ3MiAwIDAwLjU4OTIgMGwuNjIzNi0xLjAwNzNjLjA5ODItLjAwOTEuMTk2NC0uMDE4My4yOTM2LS4wMjk0bC44MDY5Ljg2NTZhLjM0ODMuMzQ4MyAwIDAwLjU3OC0uMTE1NGwuNDE0MS0xLjEwNjZhOC40NjI2IDguNDYyNiAwIDAwLjI4NTUtLjA4N2wuOTU4Ny42OTA0YS4zNDUyLjM0NTIgMCAwMC41NDQ3LS4yMjY4bC4xOTAzLTEuMTY2MmMuMDg4LS4wNDU2LjE3NTEtLjA5MzEuMjYyMi0uMTQwN2wxLjA3NjIuNDlhLjM0NzIuMzQ3MiAwIDAwLjQ5LS4zMjdsLS4wNDE1LTEuMTg0NWE2LjcyNjcgNi43MjY3IDAgMDAuMjI2Ny0uMTg2M2wxLjE1MzEuMjcxM2EuMzQ3Mi4zNDcyIDAgMDAuNDE3MS0uNDE2bC0uMjcxMy0xLjE1NDJjLjA2MjgtLjA3NDkuMTI1NS0uMTUwOC4xODYzLS4yMjc4bDEuMTg0NS4wNDE1YS4zNDQyLjM0NDIgMCAwMC4zMjgtLjQ5bC0uNDktMS4wNzZjLjA0NzUtLjA4NzIuMDk1MS0uMTc0Mi4xNDA3LS4yNjIzbDEuMTY2Mi0uMTg5M2EuMzQ4My4zNDgzIDAgMDAuMjI1OC0uNTQ0N2wtLjY5MDQtLjk1ODcuMDg3LS4yODU1IDEuMTA2Ni0uNDE0YS4zNDYyLjM0NjIgMCAwMC4xMTU0LS41NzgxbC0uODY1Ni0uODA3OWMuMDEwMS0uMDk3Mi4wMjAyLS4xOTU0LjAyODMtLjI5MzZsMS4wMDczLS42MjM2YS4zNDQyLjM0NDIgMCAwMDAtLjU4OTJ6bS02Ljc0MTMgOC4zNTUxYS43MTM4LjcxMzggMCAwMS4yOTg2LTEuMzk2LjcxNC43MTQgMCAxMS0uMjk5NyAxLjM5NnptLS4zNDIyLTIuMzE0MmEuNjQ5LjY0OSAwIDAwLS43NzE1LjVsLS4zNTczIDEuNjY4NWMtMS4xMDM1LjUwMS0yLjMyODUuNzc5NS0zLjYxOTMuNzc5NWE4LjczNjggOC43MzY4IDAgMDEtMy42OTUxLS44MTRsLS4zNTc0LTEuNjY4NGEuNjQ4LjY0OCAwIDAwLS43NzE0LS40OTlsLTEuNDczLjMxNThhOC43MjE2IDguNzIxNiAwIDAxLS43NjEzLS44OThoNy4xNjc2Yy4wODEgMCAuMTM1Ni0uMDE0MS4xMzU2LS4wODh2LTIuNTM2YzAtLjA3NC0uMDUzNi0uMDg4MS0uMTM1Ni0uMDg4MWgtMi4wOTY2di0xLjYwNzdoMi4yNjc3Yy4yMDY1IDAgMS4xMDY1LjA1ODcgMS4zOTQgMS4yMDg4LjA5MDEuMzUzMy4yODc1IDEuNTA0NC40MjMyIDEuODcyOS4xMzQ2LjQxMy42ODMzIDEuMjM4MSAxLjI2ODUgMS4yMzgxaDMuNTcxNmEuNzQ5Mi43NDkyIDAgMDAuMTI5Ni0uMDEzMSA4Ljc4NzQgOC43ODc0IDAgMDEtLjgxMTkuOTUyNnpNNi44MzY5IDIwLjAyNGEuNzE0LjcxNCAwIDExLS4yOTk3LTEuMzk2LjcxNC43MTQgMCAwMS4yOTk3IDEuMzk2ek00LjExNzcgOC45OTcyYS43MTM3LjcxMzcgMCAxMS0xLjMwNC41NzkxLjcxMzcuNzEzNyAwIDAxMS4zMDQtLjU3OXptLS44MzUyIDEuOTgxM2wxLjUzNDctLjY4MjRhLjY1LjY1IDAgMDAuMzMtLjg1ODVsLS4zMTU4LS43MTQ3aDEuMjQzMnY1LjYwMjVIMy41NjY5YTguNzc1MyA4Ljc3NTMgMCAwMS0uMjgzNC0zLjM0OHptNi43MzQzLS41NDM3VjguNzgzNmgyLjk2MDFjLjE1MyAwIDEuMDc5Mi4xNzcyIDEuMDc5Mi44Njk3IDAgLjU3NS0uNzEwNy43ODE1LTEuMjk0OC43ODE1em0xMC43NTc0IDEuNDg2MmMwIC4yMTg3LS4wMDguNDM2My0uMDI0My42NTFoLS45Yy0uMDkgMC0uMTI2NS4wNTg2LS4xMjY1LjE0Nzd2LjQxM2MwIC45NzMtLjU0ODcgMS4xODQ2LTEuMDI5NiAxLjIzODItLjQ1NzYuMDUxNy0uOTY0OC0uMTkxMy0xLjAyNzUtLjQ3MTctLjI3MDQtMS41MTg2LS43MTk4LTEuODQzNi0xLjQzMDUtMi40MDM0Ljg4MTctLjU1OTkgMS43OTktMS4zODYgMS43OTktMi40OTE1IDAtMS4xOTM2LS44MTktMS45NDU4LTEuMzc2OS0yLjMxNTMtLjc4MjUtLjUxNjMtMS42NDkxLS42MTk1LTEuODgzLS42MTk1SDUuNDY4MmE4Ljc2NTEgOC43NjUxIDAgMDE0LjkwNy0yLjc2OTlsMS4wOTc0IDEuMTUxYS42NDguNjQ4IDAgMDAuOTE4Mi4wMjEzbDEuMjI3LTEuMTc0M2E4Ljc3NTMgOC43NzUzIDAgMDE2LjAwNDQgNC4yNzYybC0uODQwMyAxLjg5ODJhLjY1Mi42NTIgMCAwMC4zMy44NTg1bDEuNjE3OC43MTg4Yy4wMjgzLjI4NzUuMDQyNS41NzcuMDQyNS44NzE3em0tOS4zMDA2LTkuNTk5M2EuNzEyOC43MTI4IDAgMTEuOTg0IDEuMDMxNi43MTM3LjcxMzcgMCAwMS0uOTg0LTEuMDMxNnptOC4zMzg5IDYuNzFhLjcxMDcuNzEwNyAwIDAxLjkzOTUtLjM2MjUuNzEzNy43MTM3IDAgMTEtLjk0MDUuMzYzNXoiLz48L3N2Zz4="/><a target="_blank" href="https://google.com"><rect width="102" height="28" fill="rgba(0,0,0,0)"/><text transform="scale(.1)" x="595" y="175" textLength="610" fill="#fff">BUILDING</text></a><a target="_blank" href="https://example.com"><rect width="58" height="28" x="102" fill="rgba(0,0,0,0)"/><text transform="scale(.1)" x="1310" y="175" textLength="340" fill="#333" font-weight="bold">PASS</text></a></g></svg>"##;
+        std::fs::write("badge.svg", &svg).unwrap();
+        std::fs::write("badge_expected.svg", expected).unwrap();
+        assert_eq!(
+            svg, expected,
+            "SVG rendering for ForTheBadge did not match expected output"
+        );
+        assert!(!svg.is_empty(), "SVG rendering for ForTheBadge failed");
     }
 
     #[test]

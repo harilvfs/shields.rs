@@ -2,11 +2,12 @@ use std::fs;
 use std::io;
 use std::path::Path;
 
-const TEMPLATE_FILES: [&str; 4] = [
+const TEMPLATE_FILES: [&str; 5] = [
     "templates/flat_badge_template.svg",
     "templates/flat_square_badge_template.svg",
     "templates/plastic_badge_template.svg",
     "templates/social_badge_template.svg",
+    "templates/for_the_badge_template.svg",
 ];
 
 fn main() -> io::Result<()> {
