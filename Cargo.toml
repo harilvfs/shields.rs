@@ -9,7 +9,7 @@ repository = "https://github.com/Jannchie/shields"
 keywords = ["badge", "SVG", "renderer", "font", "Rust"]
 categories = ["graphics", "rendering", "web-programming"]
 include = ["assets/**", "templates/**", "src/**", "Cargo.toml", "README.md"]
-homepage = "https://github.com/Jannchie/shields"
+homepage = "https://github.com/Jannchie/shields.rs"
 documentation = "https://docs.rs/shields"
 readme = "README.md"
 
