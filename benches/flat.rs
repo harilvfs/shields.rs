@@ -33,8 +33,8 @@ fn bench_params_badge(c: &mut Criterion) {
                 message: Some(binding.as_str()),
                 label_color: Some("#555"),
                 message_color: Some("#4c1"),
-                link: None,
-                extra_link: None,
+                link: Some("https://example.com"),
+                extra_link: Some("https://example.org"),
                 logo: Some("rust"),
                 logo_color: Some("#FFF"),
             };
@@ -55,6 +55,8 @@ fn bench_builder_badge(c: &mut Criterion) {
                 .message_color("#4c1")
                 .logo("rust")
                 .logo_color("#FFF")
+                .link("https://example.com")
+                .extra_link("https://example.org")
                 .build();
         });
     });

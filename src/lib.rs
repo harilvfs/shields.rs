@@ -203,23 +203,23 @@ struct ForTheBadgeSvgTemplateContext<'a> {
     font_family: &'a str,
     font_size: i32,
 
-    // // Label (left side)
+    // Label (left side)
     label: &'a str,
     label_x: f32,
     label_width_scaled: i32,
     label_text_color: &'a str,
 
-    // // Message (right side)
+    // Message (right side)
     message: &'a str,
     message_x: f32,
     message_text_color: &'a str,
     message_width_scaled: i32,
 
-    // // Links
+    // Links
     link: &'a str,
     extra_link: &'a str,
 
-    // // Logo
+    // Logo
     logo: &'a str,
     logo_x: i32,
 }

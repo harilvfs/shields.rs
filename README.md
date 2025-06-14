@@ -9,24 +9,30 @@
 
 A high-performance badge rendering engine written in Rust, supporting SVG output and font parsing. This project is designed for developers and services that require fast, customizable, and reliable badge generation.
 
-**🎯 Pixel-Perfect Consistency with shields.io**
-
-Our goal is to achieve pixel-perfect, 100% identical rendering results to [shields.io](https://shields.io/). We utilize precisely the same text length calculation data to ensure full consistency, while delivering significantly improved efficiency.
-
 **🟢 Bitwise-Identical SVG Output**
 
 Not only do we pursue pixel-level similarity, but we also guarantee that the generated SVG string is bitwise-identical to the output returned by shields.io for the same parameters. This ensures absolute compatibility and consistency for all use cases.
 
-**🎨 Supported Styles**
+**⚡️ Fast & Efficient**
 
-We support all major badge styles: `flat`, `flat-square`, `plastic`, `social` and `for-the-badge`. Each style can be customized with various properties such as label, message, color, logo, and more.
+Over 10x faster than the Node.js badge-maker library, this Rust implementation is optimized for speed and efficiency. It can generate badges in microseconds, making it suitable for high-performance applications and services.
+
+**🎨 Supported All Styles & Logos**
+
+We support all major badge styles: `flat`, `flat-square`, `plastic`, `social` and `for-the-badge`. Each style can be customized with various properties such as label, message, color, logo, and more. You can easily use [Simple Icons](https://simpleicons.org/?q=5) slugs to set logos for your badges, and we also support custom logos with SVG strings.
+
+## Benchmark: Rust vs Node.js badge-maker
+
+| Library     | Language | Time per badge | Unit |
+| ----------- | -------- | -------------- | ---- |
+| shields     | Rust     | 4.4796         | µs   |
+| badge-maker | Node.js  | 49.5232        | µs   |
 
 ## Installation
 
-### Prerequisites
-
-- [Rust](https://www.rust-lang.org/tools/install) (edition 2024 or later)
-- Cargo package manager (comes with Rust)
+```bash
+cargo add shields
+```
 
 ## Usage Example
 
@@ -57,22 +63,6 @@ fn main() {
         .build();
     println!("{}", badge);
 }
-```
-
-## Contributing
-
-Contributions are welcome! To get started:
-
-1. Fork the repository on [GitHub](https://github.com/Jannchie/shields).
-2. Create a new branch for your feature or bugfix.
-3. Commit your changes with clear messages.
-4. Open a pull request describing your changes.
-5. For issues, please use the [GitHub Issues](https://github.com/Jannchie/shields/issues) page.
-
-Before submitting a PR, ensure all tests pass:
-
-```bash
-cargo test
 ```
 
 ## License
