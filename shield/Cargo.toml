@@ -1,0 +1,7 @@
+[package]
+name = "shield"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+shields = "1.0.0"
